@@ -7,6 +7,8 @@ namespace Mate.MVVM.ViewModels;
 
 public sealed class MainWindowViewModel : BaseViewModel
 {
+    private string _currentToolTitle = string.Empty;
+
     public MainWindowViewModel(INavigationService navigationService)
     {
         NavigationService = navigationService;
@@ -15,7 +17,7 @@ public sealed class MainWindowViewModel : BaseViewModel
             new("♪", "Музыка", typeof(MusicViewModel)),
             new("□", "Папка", typeof(FolderViewModel)),
             new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
-            new("≡", "Заготовки", typeof(SnippetsViewModel)),
+            new("⚑", "Закреплённые", typeof(SnippetsViewModel)),
             new("◉", "Инкогнито", typeof(IncognitoViewModel)),
             new("文", "Переводчик", typeof(TranslatorViewModel))
         };
@@ -28,6 +30,12 @@ public sealed class MainWindowViewModel : BaseViewModel
     public IReadOnlyList<NavigationItemViewModel> NavigationItems { get; }
 
     public DelegateCommand NavigateCommand { get; }
+
+    public string CurrentToolTitle
+    {
+        get => _currentToolTitle;
+        private set => SetProperty(ref _currentToolTitle, value);
+    }
 
     private void Navigate(object? parameter)
     {
@@ -48,5 +56,7 @@ public sealed class MainWindowViewModel : BaseViewModel
         {
             navigationItem.IsSelected = ReferenceEquals(navigationItem, item);
         }
+
+        CurrentToolTitle = item.ToolTip.ToUpperInvariant();
     }
 }
