@@ -13,6 +13,18 @@ public sealed class TrayService : ITrayService
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Открыть Mate", null, (_, _) => togglePanel());
         menu.Items.Add(new Forms.ToolStripSeparator());
+
+        var themeMenu = new Forms.ToolStripMenuItem("Тема");
+        var darkThemeItem = new Forms.ToolStripMenuItem("Тёмная")
+        {
+            Checked = true,
+            CheckOnClick = false
+        };
+        darkThemeItem.Click += (_, _) => darkThemeItem.Checked = true;
+        themeMenu.DropDownItems.Add(darkThemeItem);
+        menu.Items.Add(themeMenu);
+        menu.Items.Add(new Forms.ToolStripSeparator());
+
         menu.Items.Add("Выход", null, (_, _) => exitApplication());
 
         _notifyIcon = new Forms.NotifyIcon
