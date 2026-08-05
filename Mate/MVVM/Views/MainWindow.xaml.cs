@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     {
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2;
-        Top = workArea.Top + 24;
+        Top = workArea.Top;
     }
 
     public void PrepareOpenAnimation()
