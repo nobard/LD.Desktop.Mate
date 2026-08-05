@@ -21,6 +21,7 @@ public static class AutofacConfig
         builder.RegisterType<WindowsClipboardHistoryService>().As<IClipboardHistoryService>().SingleInstance();
         builder.RegisterType<SnippetStorageService>().As<ISnippetStorageService>().SingleInstance();
         builder.RegisterType<PrivateBrowserService>().As<IPrivateBrowserService>().SingleInstance();
+        builder.RegisterType<ThemeService>().As<IThemeService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {

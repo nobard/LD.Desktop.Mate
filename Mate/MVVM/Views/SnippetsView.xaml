@@ -23,8 +23,8 @@
             <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="13,0" />
             <Setter Property="Foreground" Value="#D5D5D5" />
-            <Setter Property="Background" Value="#242424" />
-            <Setter Property="BorderBrush" Value="#414141" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.BorderStrong}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -34,8 +34,8 @@
                             <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#303030" /><Setter Property="Foreground" Value="#F2F2F2" /></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="#383838" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonHover}" /><Setter Property="Foreground" Value="#F2F2F2" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonPressed}" /></Trigger>
                             <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.35" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -59,8 +59,8 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#2B2B2B" /><Setter Property="Foreground" Value="#D8D8D8" /></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="#363636" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.SurfacePressed}" /><Setter Property="Foreground" Value="#D8D8D8" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.SelectedBackground}" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -74,8 +74,8 @@
             <Setter Property="Height" Value="30" />
             <Setter Property="Margin" Value="0,0,0,4" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="#181818" />
-            <Setter Property="BorderBrush" Value="#343434" />
+            <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -87,8 +87,8 @@
                             <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#222222" /><Setter TargetName="Surface" Property="BorderBrush" Value="#555555" /></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="#292929" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.SurfaceHover}" /><Setter TargetName="Surface" Property="BorderBrush" Value="#555555" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.SurfacePressed}" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -111,7 +111,7 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#303030" /><Setter Property="Foreground" Value="#D8D8D8" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonHover}" /><Setter Property="Foreground" Value="#D8D8D8" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -122,10 +122,10 @@
         </Style>
 
         <Style x:Key="InputBox" TargetType="TextBox" BasedOn="{StaticResource MateTextBoxBase}">
-            <Setter Property="Background" Value="#171717" />
+            <Setter Property="Background" Value="{DynamicResource Theme.SurfaceLow}" />
             <Setter Property="Foreground" Value="#E7E7E7" />
             <Setter Property="CaretBrush" Value="#E7E7E7" />
-            <Setter Property="BorderBrush" Value="#3A3A3A" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="10,6" />
             <Setter Property="FontSize" Value="12" />
@@ -147,8 +147,8 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="Foreground" Value="#929292" />
-            <Setter Property="Background" Value="#171717" />
-            <Setter Property="BorderBrush" Value="#383838" />
+            <Setter Property="Background" Value="{DynamicResource Theme.SurfaceLow}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -158,8 +158,8 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#252525" /><Setter Property="Foreground" Value="#D2D2D2" /></Trigger>
-                            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Surface" Property="Background" Value="#383838" /><Setter TargetName="Surface" Property="BorderBrush" Value="#686868" /><Setter Property="Foreground" Value="#F0F0F0" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.SurfaceHover}" /><Setter Property="Foreground" Value="#D2D2D2" /></Trigger>
+                            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonPressed}" /><Setter TargetName="Surface" Property="BorderBrush" Value="#686868" /><Setter Property="Foreground" Value="#F0F0F0" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -215,7 +215,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border Background="#191919" BorderBrush="#323232" BorderThickness="1" CornerRadius="8">
+            <Border Background="{DynamicResource Theme.SearchBackground}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="8">
                 <Grid Margin="11,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="21" /><ColumnDefinition Width="*" /><ColumnDefinition Width="26" /></Grid.ColumnDefinitions>
                     <Viewbox Width="15" Height="15" VerticalAlignment="Center"><Path Data="M 7,2 A 5,5 0 1 0 7,12 A 5,5 0 1 0 7,2 M 11,11 L 16,16" Stroke="#858585" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent" /></Viewbox>
@@ -255,7 +255,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Margin="31,11,24,19" BorderBrush="#343434" BorderThickness="1" CornerRadius="10" IsHitTestVisible="False">
+        <Border Grid.Row="1" Margin="31,11,24,19" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="10" IsHitTestVisible="False">
             <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsEmpty}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="@" Foreground="#707070" FontSize="25" FontWeight="SemiBold" HorizontalAlignment="Center" />
@@ -265,7 +265,7 @@
 
         <Grid Grid.RowSpan="2" Panel.ZIndex="20">
             <Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsEditorOpen}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Grid.Style>
-            <Border Background="#151515" Padding="31,20,24,19" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource Theme.EditorBackground}" Padding="31,20,24,19" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="38" />
@@ -289,7 +289,7 @@
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Style="{StaticResource HeaderButton}" Height="34" Content="Добавить" Command="{Binding AddItemCommand}" Margin="0,0,8,0" />
-                            <Button Style="{StaticResource HeaderButton}" Width="34" Padding="0" Content="×" FontSize="17" ToolTip="Закрыть" Command="{Binding CancelEditorCommand}" Background="Transparent" BorderBrush="#383838" />
+                            <Button Style="{StaticResource HeaderButton}" Width="34" Padding="0" Content="×" FontSize="17" ToolTip="Закрыть" Command="{Binding CancelEditorCommand}" Background="Transparent" BorderBrush="{DynamicResource Theme.Border}" />
                         </StackPanel>
                     </Grid>
 

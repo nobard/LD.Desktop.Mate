@@ -5,6 +5,10 @@
              xmlns:vms="clr-namespace:Mate.MVVM.ViewModels">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <Style x:Key="MateTextBoxBase" TargetType="TextBox">
                 <Setter Property="SelectionBrush" Value="#A0A0A0" />
                 <Setter Property="SelectionTextBrush" Value="#FFFFFF" />

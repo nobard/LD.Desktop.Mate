@@ -60,8 +60,8 @@
             <Setter Property="Height" Value="154" />
             <Setter Property="Margin" Value="0,0,16,16" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="#171717" />
-            <Setter Property="BorderBrush" Value="#424242" />
+            <Setter Property="Background" Value="{DynamicResource Theme.SurfaceLow}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.BorderStrong}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -76,7 +76,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="CardSurface" Property="Background" Value="#202020" />
+                                <Setter TargetName="CardSurface" Property="Background" Value="{DynamicResource Theme.SurfaceHover}" />
                                 <Setter TargetName="CardSurface" Property="BorderBrush" Value="#656565" />
                             </Trigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
@@ -95,7 +95,7 @@
             <Setter Property="Margin" Value="8,0,0,0" />
             <Setter Property="Foreground" Value="#BDBDBD" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="#363636" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -110,7 +110,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="FooterSurface" Property="Background" Value="#292929" />
+                                <Setter TargetName="FooterSurface" Property="Background" Value="{DynamicResource Theme.SurfacePressed}" />
                                 <Setter Property="Foreground" Value="#F0F0F0" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -160,7 +160,7 @@
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
 
-                                    <Border Grid.Row="0" Background="#292929" CornerRadius="7" ClipToBounds="True">
+                                    <Border Grid.Row="0" Background="{DynamicResource Theme.PlaceholderBackground}" CornerRadius="7" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                                             <Grid>
@@ -174,7 +174,7 @@
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Grid.Style>
-                                                <Border Width="46" Height="54" CornerRadius="5" Background="#353535" BorderBrush="#555555" BorderThickness="1">
+                                                <Border Width="46" Height="54" CornerRadius="5" Background="{DynamicResource Theme.Divider}" BorderBrush="#555555" BorderThickness="1">
                                                     <StackPanel VerticalAlignment="Center">
                                                         <Path Data="M 10,3 L 24,3 L 34,13 L 34,43 L 10,43 Z M 24,3 L 24,13 L 34,13"
                                                               Width="25" Height="33" Stretch="Fill" Stroke="#8B8B8B" StrokeThickness="1.4" Fill="Transparent" />
@@ -224,7 +224,7 @@
             </ScrollViewer>
 
             <Border Grid.Row="0"
-                    BorderBrush="#353535"
+                    BorderBrush="{DynamicResource Theme.Divider}"
                     BorderThickness="1"
                     CornerRadius="11"
                     Margin="0,2,0,14"
