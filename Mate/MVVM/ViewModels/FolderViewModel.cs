@@ -26,7 +26,7 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
         ToggleSelectionCommand = new DelegateCommand(ToggleSelection);
         ClearSelectionCommand = new DelegateCommand(_ => ClearSelection(), _ => HasSelection);
         DeleteSelectedCommand = new DelegateCommand(_ => DeleteSelected(), _ => HasSelection);
-        OpenStorageFolderCommand = new DelegateCommand(_ => OpenPath(_fileShelfService.StorageFolder));
+        ClearFilesCommand = new DelegateCommand(_ => ClearFiles(), _ => !IsEmpty);
 
         _fileShelfService.FilesChanged += FileShelfService_FilesChanged;
         ReloadFiles();
@@ -44,7 +44,7 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
 
     public DelegateCommand DeleteSelectedCommand { get; }
 
-    public DelegateCommand OpenStorageFolderCommand { get; }
+    public DelegateCommand ClearFilesCommand { get; }
 
     public string SelectionSummary => HasSelection
         ? $"Выбрано: {Files.Count(file => file.IsSelected)}"
@@ -131,6 +131,19 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
         }
     }
 
+    private void ClearFiles()
+    {
+        var paths = Files.Select(file => file.FilePath).ToArray();
+        try
+        {
+            _fileShelfService.DeleteFiles(paths);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = "Не удалось очистить хранилище";
+        }
+    }
+
     private void File_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(FileCardViewModel.IsSelected)) NotifyCollectionStateChanged();
@@ -155,6 +168,7 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
         OnPropertyChanged(nameof(HasSelection));
         ClearSelectionCommand.RaiseCanExecuteChanged();
         DeleteSelectedCommand.RaiseCanExecuteChanged();
+        ClearFilesCommand.RaiseCanExecuteChanged();
     }
 
     public void Dispose()

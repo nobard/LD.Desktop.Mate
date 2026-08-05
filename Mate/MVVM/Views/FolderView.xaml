@@ -209,9 +209,9 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Style="{StaticResource FooterButton}" Content="Открыть папку" Command="{Binding OpenStorageFolderCommand}" />
                     <Button Style="{StaticResource FooterButton}" Content="Снять выбор" Command="{Binding ClearSelectionCommand}" />
                     <Button Style="{StaticResource FooterButton}" Content="Удалить" Command="{Binding DeleteSelectedCommand}" />
+                    <Button Style="{StaticResource FooterButton}" Content="Очистить" Command="{Binding ClearFilesCommand}" />
                 </StackPanel>
             </Grid>
         </Grid>
