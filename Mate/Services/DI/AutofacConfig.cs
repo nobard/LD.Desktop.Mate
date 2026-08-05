@@ -17,6 +17,7 @@ public static class AutofacConfig
         builder.RegisterType<NavigationService>().As<INavigationService>().SingleInstance();
         builder.RegisterType<TrayService>().As<ITrayService>().SingleInstance();
         builder.RegisterType<WindowsMediaSessionService>().As<IMediaSessionService>().SingleInstance();
+        builder.RegisterType<FileShelfService>().As<IFileShelfService>().SingleInstance().AutoActivate();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {
