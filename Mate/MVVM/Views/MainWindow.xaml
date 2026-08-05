@@ -34,7 +34,19 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="#141414" BorderBrush="#434343" BorderThickness="1" CornerRadius="14">
+    <Border x:Name="WindowSurface"
+            Background="#141414"
+            BorderBrush="#434343"
+            BorderThickness="1"
+            CornerRadius="14"
+            RenderTransformOrigin="0.5,0"
+            RenderOptions.BitmapScalingMode="LowQuality">
+        <Border.CacheMode>
+            <BitmapCache RenderAtScale="1" />
+        </Border.CacheMode>
+        <Border.RenderTransform>
+            <ScaleTransform x:Name="OpenScaleTransform" ScaleX="1" ScaleY="1" />
+        </Border.RenderTransform>
         <Grid>
             <Grid.RowDefinitions><RowDefinition Height="50" /><RowDefinition Height="*" /></Grid.RowDefinitions>
             <Grid.ColumnDefinitions><ColumnDefinition Width="72" /><ColumnDefinition Width="1" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>

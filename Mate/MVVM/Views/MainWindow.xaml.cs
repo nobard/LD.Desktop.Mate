@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Mate.MVVM.ViewModels;
 
@@ -13,6 +14,8 @@ public partial class MainWindow : Window
 {
     private readonly DispatcherTimer _folderHoverTimer;
     private NavigationItemViewModel? _folderHoverItem;
+    private int _animationVersion;
+    private bool _closeCanBeCancelled;
 
     public MainWindow()
     {
@@ -26,6 +29,8 @@ public partial class MainWindow : Window
 
     public bool AllowClose { get; set; }
 
+    public bool IsClosingAnimation { get; private set; }
+
     public void PositionAtTopCenter()
     {
         var workArea = SystemParameters.WorkArea;
@@ -33,10 +38,97 @@ public partial class MainWindow : Window
         Top = workArea.Top + 24;
     }
 
+    public void PrepareOpenAnimation()
+    {
+        _animationVersion++;
+        IsClosingAnimation = false;
+        SetSurfaceState(0, 0.38, 0.35);
+    }
+
+    public void PlayOpenAnimation()
+    {
+        var startOpacity = Opacity;
+        var startScaleX = OpenScaleTransform.ScaleX;
+        var startScaleY = OpenScaleTransform.ScaleY;
+        SetSurfaceState(startOpacity, startScaleX, startScaleY);
+
+        IsClosingAnimation = false;
+        _closeCanBeCancelled = false;
+        var animationVersion = ++_animationVersion;
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var opacityAnimation = CreateAnimation(1, 360, easing);
+        var scaleXAnimation = CreateAnimation(1, 420, easing);
+        var scaleYAnimation = CreateAnimation(1, 420, easing);
+        scaleYAnimation.Completed += (_, _) =>
+        {
+            if (animationVersion != _animationVersion) return;
+            SetSurfaceState(1, 1, 1);
+        };
+
+        BeginAnimation(OpacityProperty, opacityAnimation);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, scaleXAnimation);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, scaleYAnimation);
+    }
+
+    public void HideAnimated(bool cancelWhenPointerReturns = false)
+    {
+        if (!IsVisible || IsClosingAnimation) return;
+
+        var startOpacity = Opacity;
+        var startScaleX = OpenScaleTransform.ScaleX;
+        var startScaleY = OpenScaleTransform.ScaleY;
+        SetSurfaceState(startOpacity, startScaleX, startScaleY);
+
+        IsClosingAnimation = true;
+        _closeCanBeCancelled = cancelWhenPointerReturns;
+        var animationVersion = ++_animationVersion;
+        var easing = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var opacityAnimation = CreateAnimation(0, 300, easing);
+        var scaleXAnimation = CreateAnimation(0.38, 350, easing);
+        var scaleYAnimation = CreateAnimation(0.35, 350, easing);
+        scaleYAnimation.Completed += (_, _) =>
+        {
+            if (animationVersion != _animationVersion) return;
+            IsClosingAnimation = false;
+            _closeCanBeCancelled = false;
+            Hide();
+            SetSurfaceState(1, 1, 1);
+        };
+
+        BeginAnimation(OpacityProperty, opacityAnimation);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, scaleXAnimation);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, scaleYAnimation);
+    }
+
+    public void CancelCloseAnimation(bool force = false)
+    {
+        if (IsClosingAnimation && (_closeCanBeCancelled || force)) PlayOpenAnimation();
+    }
+
+    private static DoubleAnimation CreateAnimation(
+        double targetValue,
+        double durationMilliseconds,
+        IEasingFunction easing) => new(targetValue, System.TimeSpan.FromMilliseconds(durationMilliseconds))
+    {
+        EasingFunction = easing,
+        FillBehavior = FillBehavior.HoldEnd
+    };
+
+    private void SetSurfaceState(double opacity, double scaleX, double scaleY)
+    {
+        BeginAnimation(OpacityProperty, null);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, null);
+        OpenScaleTransform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, null);
+
+        Opacity = opacity;
+        OpenScaleTransform.ScaleX = scaleX;
+        OpenScaleTransform.ScaleY = scaleY;
+    }
+
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape) return;
-        Hide();
+        HideAnimated();
         e.Handled = true;
     }
 
@@ -44,7 +136,7 @@ public partial class MainWindow : Window
     {
         if (AllowClose) return;
         e.Cancel = true;
-        Hide();
+        HideAnimated();
     }
 
     private void NavigationButton_DragEnter(object sender, DragEventArgs e)

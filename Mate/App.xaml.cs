@@ -48,7 +48,14 @@ public partial class App : Application
         if (_mainWindow is null) return;
         if (_mainWindow.IsVisible)
         {
-            _mainWindow.Hide();
+            if (_mainWindow.IsClosingAnimation)
+            {
+                _mainWindow.CancelCloseAnimation(force: true);
+            }
+            else
+            {
+                HidePanel(cancelWhenPointerReturns: false);
+            }
             return;
         }
 
@@ -60,7 +67,9 @@ public partial class App : Application
         if (_mainWindow is null || _mainWindow.IsVisible) return;
 
         _mainWindow.PositionAtTopCenter();
+        _mainWindow.PrepareOpenAnimation();
         _mainWindow.Show();
+        _mainWindow.PlayOpenAnimation();
         if (activate) _mainWindow.Activate();
 
         _panelShownAtUtc = DateTime.UtcNow;
@@ -68,10 +77,10 @@ public partial class App : Application
         _pointerEnteredPanel = false;
     }
 
-    private void HidePanel()
+    private void HidePanel(bool cancelWhenPointerReturns = true)
     {
         if (_mainWindow is null || !_mainWindow.IsVisible) return;
-        _mainWindow.Hide();
+        _mainWindow.HideAnimated(cancelWhenPointerReturns);
         _pointerLeftAtUtc = null;
         _pointerEnteredPanel = false;
     }
@@ -91,6 +100,7 @@ public partial class App : Application
 
         if (IsPointerInsidePanel(pointer))
         {
+            _mainWindow.CancelCloseAnimation();
             _pointerEnteredPanel = true;
             _pointerLeftAtUtc = null;
             return;
@@ -98,9 +108,12 @@ public partial class App : Application
 
         if (pointerInHotZone)
         {
+            _mainWindow.CancelCloseAnimation();
             _pointerLeftAtUtc = null;
             return;
         }
+
+        if (_mainWindow.IsClosingAnimation) return;
 
         if (Forms.Control.MouseButtons != Forms.MouseButtons.None)
         {
