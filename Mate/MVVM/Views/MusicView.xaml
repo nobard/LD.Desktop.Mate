@@ -16,8 +16,18 @@
 
     <Grid Margin="42,30,38,30">
         <Grid.RowDefinitions><RowDefinition Height="17" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Source}"
+                   Foreground="#898989"
+                   FontSize="11"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="240" />
+
         <Grid Grid.Row="1" Margin="0,34,0,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="104" /><ColumnDefinition Width="*" /><ColumnDefinition Width="160" /><ColumnDefinition Width="110" /></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="104" /><ColumnDefinition Width="*" /><ColumnDefinition Width="160" /></Grid.ColumnDefinitions>
 
             <Border Width="104" Height="104" Background="#292929" CornerRadius="12" VerticalAlignment="Top">
                 <Grid ClipToBounds="True">
@@ -43,8 +53,6 @@
                 <Button Style="{StaticResource PlaybackButton}" ToolTip="{Binding PlayPauseToolTip}" Command="{Binding TogglePlayPauseCommand}" Margin="7,0"><TextBlock Text="{Binding PlayPauseGlyph}" Foreground="#F5F5F5" FontSize="25" FontFamily="Segoe UI Symbol" HorizontalAlignment="Center" VerticalAlignment="Center" /></Button>
                 <Button Style="{StaticResource PlaybackButton}" ToolTip="Следующий трек" Command="{Binding SkipNextCommand}"><Viewbox Width="24" Height="24"><Path Data="M 17,5 L 17,19 M 6,5 L 16,12 L 6,19 Z" Stroke="#E6E6E6" StrokeThickness="1.8" StrokeLineJoin="Round" Fill="Transparent" /></Viewbox></Button>
             </StackPanel>
-
-            <TextBlock Grid.Column="3" Text="{Binding Source}" Foreground="#898989" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
         </Grid>
     </Grid>
 </UserControl>

@@ -51,7 +51,7 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
         _ = ExecuteSafelyAsync(_mediaSessionService.InitializeAsync);
     }
 
-    public override string Title => "Музыка";
+    public override string Title => "Плеер";
 
     public override string Description => "Текущий системный медиасеанс Windows.";
 

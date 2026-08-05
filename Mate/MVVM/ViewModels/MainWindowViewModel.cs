@@ -14,7 +14,7 @@ public sealed class MainWindowViewModel : BaseViewModel
         NavigationService = navigationService;
         NavigationItems = new List<NavigationItemViewModel>
         {
-            new("♪", "Музыка", typeof(MusicViewModel)),
+            new("♪", "Плеер", typeof(MusicViewModel)),
             new("□", "Папка", typeof(FolderViewModel)),
             new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
             new("⚑", "Заготовки", typeof(SnippetsViewModel)),

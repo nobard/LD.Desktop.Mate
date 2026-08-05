@@ -55,7 +55,7 @@
                                 </Grid>
                             </Button>
                             <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding ToolTip}" Value="Музыка"><Setter TargetName="MusicIcon" Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ToolTip}" Value="Плеер"><Setter TargetName="MusicIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Папка"><Setter TargetName="FolderIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Буфер обмена"><Setter TargetName="ClipboardIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Заготовки"><Setter TargetName="PinIcon" Property="Visibility" Value="Visible" /></DataTrigger>
