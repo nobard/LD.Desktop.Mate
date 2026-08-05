@@ -15,6 +15,7 @@
             <Setter Property="Foreground" Value="#929292" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ToolTip" Value="{Binding ToolTip}" />
             <Setter Property="Template">
@@ -57,7 +58,7 @@
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Музыка"><Setter TargetName="MusicIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Папка"><Setter TargetName="FolderIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Буфер обмена"><Setter TargetName="ClipboardIcon" Property="Visibility" Value="Visible" /></DataTrigger>
-                                <DataTrigger Binding="{Binding ToolTip}" Value="Закреплённые"><Setter TargetName="PinIcon" Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ToolTip}" Value="Заготовки"><Setter TargetName="PinIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Инкогнито"><Setter TargetName="IncognitoIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Переводчик"><Setter TargetName="TranslateIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                             </DataTemplate.Triggers>

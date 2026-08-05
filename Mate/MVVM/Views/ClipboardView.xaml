@@ -75,8 +75,7 @@
         </Style>
 
         <Style x:Key="ClipboardCard" TargetType="Button">
-            <Setter Property="MinHeight" Value="30" />
-            <Setter Property="MaxHeight" Value="72" />
+            <Setter Property="Height" Value="30" />
             <Setter Property="Margin" Value="0,0,0,4" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Foreground" Value="#DDDDDD" />
@@ -148,17 +147,19 @@
         </Style>
 
         <Style x:Key="ClearButton" TargetType="Button">
-            <Setter Property="Height" Value="22" />
-            <Setter Property="Padding" Value="9,0" />
-            <Setter Property="Foreground" Value="#858585" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="80" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="13,0" />
+            <Setter Property="Foreground" Value="#D5D5D5" />
+            <Setter Property="Background" Value="#242424" />
+            <Setter Property="BorderBrush" Value="#414141" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ClearSurface" Background="{TemplateBinding Background}" CornerRadius="5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border x:Name="ClearSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -175,27 +176,38 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="31,20,24,19">
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="22" />
+            <RowDefinition Height="56" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="#858585"
-                       FontSize="11"
-                       Margin="0,0,75,0"
-                       TextTrimming="CharacterEllipsis"
-                       VerticalAlignment="Center" />
+        <Grid Grid.Row="0" Margin="31,20,24,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Background="Transparent" BorderThickness="0">
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="#858585"
+                           FontSize="11"
+                           Margin="0,5,0,0"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+            </Border>
+
             <Button Content="Очистить"
+                    Grid.Column="1"
                     Style="{StaticResource ClearButton}"
                     Command="{Binding ClearHistoryCommand}"
-                    HorizontalAlignment="Right" />
+                    Margin="10,0,0,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center" />
         </Grid>
 
         <ScrollViewer Grid.Row="1"
-                      Margin="0,11,0,0"
+                      Margin="31,11,0,19"
                       VerticalScrollBarVisibility="Visible"
                       HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,8,0">
@@ -271,7 +283,7 @@
         </ScrollViewer>
 
         <Border Grid.Row="1"
-                Margin="0,11,0,0"
+                Margin="31,11,24,19"
                 BorderBrush="#343434"
                 BorderThickness="1"
                 CornerRadius="11"

@@ -5,6 +5,13 @@
              xmlns:vms="clr-namespace:Mate.MVVM.ViewModels">
     <Application.Resources>
         <ResourceDictionary>
+            <Style x:Key="MateTextBoxBase" TargetType="TextBox">
+                <Setter Property="SelectionBrush" Value="#A0A0A0" />
+                <Setter Property="SelectionTextBrush" Value="#FFFFFF" />
+                <Setter Property="SelectionOpacity" Value="0.4" />
+            </Style>
+            <Style TargetType="TextBox" BasedOn="{StaticResource MateTextBoxBase}" />
+
             <DataTemplate DataType="{x:Type vms:MusicViewModel}"><views:MusicView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:FolderViewModel}"><views:FolderView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:ClipboardViewModel}"><views:ClipboardView /></DataTemplate>

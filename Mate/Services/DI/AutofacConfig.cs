@@ -19,6 +19,7 @@ public static class AutofacConfig
         builder.RegisterType<WindowsMediaSessionService>().As<IMediaSessionService>().SingleInstance();
         builder.RegisterType<FileShelfService>().As<IFileShelfService>().SingleInstance().AutoActivate();
         builder.RegisterType<WindowsClipboardHistoryService>().As<IClipboardHistoryService>().SingleInstance();
+        builder.RegisterType<SnippetStorageService>().As<ISnippetStorageService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {

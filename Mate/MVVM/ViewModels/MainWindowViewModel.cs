@@ -17,7 +17,7 @@ public sealed class MainWindowViewModel : BaseViewModel
             new("♪", "Музыка", typeof(MusicViewModel)),
             new("□", "Папка", typeof(FolderViewModel)),
             new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
-            new("⚑", "Закреплённые", typeof(SnippetsViewModel)),
+            new("⚑", "Заготовки", typeof(SnippetsViewModel)),
             new("◉", "Инкогнито", typeof(IncognitoViewModel)),
             new("文", "Переводчик", typeof(TranslatorViewModel))
         };
