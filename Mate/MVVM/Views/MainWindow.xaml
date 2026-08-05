@@ -44,7 +44,12 @@
                         <DataTemplate DataType="{x:Type viewModels:NavigationItemViewModel}">
                             <Button Style="{StaticResource NavigationButton}"
                                     Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}">
+                                    CommandParameter="{Binding}"
+                                    AllowDrop="True"
+                                    DragEnter="NavigationButton_DragEnter"
+                                    DragOver="NavigationButton_DragOver"
+                                    DragLeave="NavigationButton_DragLeave"
+                                    Drop="NavigationButton_Drop">
                                 <Grid Width="24" Height="24">
                                     <Canvas x:Name="MusicIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 8,3 L 8,16 C 6,15 3,16 3,19 C 3,23 10,23 10,19 L 10,7 L 18,5 L 18,15 C 16,14 13,15 13,18 C 13,22 20,22 20,18 L 20,3 L 8,6 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /></Canvas>
                                     <Canvas x:Name="FolderIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 3,7 L 10,7 L 12,5 L 21,5 L 21,19 L 3,19 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeLineJoin="Round" Fill="Transparent" /></Canvas>
