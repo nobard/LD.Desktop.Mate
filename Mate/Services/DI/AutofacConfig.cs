@@ -20,6 +20,7 @@ public static class AutofacConfig
         builder.RegisterType<FileShelfService>().As<IFileShelfService>().SingleInstance().AutoActivate();
         builder.RegisterType<WindowsClipboardHistoryService>().As<IClipboardHistoryService>().SingleInstance();
         builder.RegisterType<SnippetStorageService>().As<ISnippetStorageService>().SingleInstance();
+        builder.RegisterType<PrivateBrowserService>().As<IPrivateBrowserService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {
