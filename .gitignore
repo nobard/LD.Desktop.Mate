@@ -6,11 +6,21 @@
 
 # Visual Studio and user-specific files
 .vs/
+*.csproj.user
 *.user
 *.userosscache
 *.suo
 *.rsuser
 *.sln.docstates
+*.sln.metaproj
+*.vcxproj.user
+*.VC.db
+*.VC.VC.opendb
+
+# ReSharper and JetBrains Rider
+_ReSharper*/
+*.DotSettings.user
+.idea/
 
 # IDE settings
 .vscode/
@@ -34,6 +44,12 @@ packages/
 # Publish and temporary files
 [Pp]ublish/
 [Pp]ublished/
+artifacts/
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+Generated Files/
 *.tmp
 *.temp
 ~$*
