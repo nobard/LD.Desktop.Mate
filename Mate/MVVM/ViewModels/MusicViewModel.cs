@@ -65,6 +65,8 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
 
     public override string Description => "Текущий системный медиасеанс Windows.";
 
+    public override string HeaderInfo => Source;
+
     public string TrackTitle
     {
         get => _trackTitle;
@@ -80,7 +82,11 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     public string Source
     {
         get => _source;
-        private set => SetProperty(ref _source, value);
+        private set
+        {
+            if (!SetProperty(ref _source, value)) return;
+            OnPropertyChanged(nameof(HeaderInfo));
+        }
     }
 
     public ImageSource? Thumbnail
