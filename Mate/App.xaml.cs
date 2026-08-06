@@ -14,6 +14,7 @@ public partial class App : Application
     private IContainer? _container;
     private ITrayService? _trayService;
     private MainWindow? _mainWindow;
+    private HotZoneWindow? _hotZoneWindow;
     private DispatcherTimer? _pointerTimer;
     private DateTime _panelShownAtUtc;
     private DateTime? _pointerLeftAtUtc;
@@ -29,6 +30,10 @@ public partial class App : Application
         _container = AutofacConfig.GetConfiguredContainer();
         _mainWindow = _container.Resolve<MainWindow>();
         MainWindow = _mainWindow;
+
+        _hotZoneWindow = new HotZoneWindow();
+        _hotZoneWindow.PositionAtTopCenter();
+        _hotZoneWindow.Show();
 
         _trayService = _container.Resolve<ITrayService>();
         _trayService.Initialize(
@@ -142,24 +147,37 @@ public partial class App : Application
                && pointer.Y <= bottomRight.Y;
     }
 
-    private static bool IsPointerInTopCenterHotZone(System.Drawing.Point pointer)
+    private bool IsPointerInTopCenterHotZone(System.Drawing.Point pointer)
     {
+        if (_hotZoneWindow is { IsVisible: true })
+        {
+            var topLeft = _hotZoneWindow.PointToScreen(new Point(0, 0));
+            var bottomRight = _hotZoneWindow.PointToScreen(
+                new Point(_hotZoneWindow.ActualWidth, _hotZoneWindow.ActualHeight));
+
+            return pointer.X >= topLeft.X
+                   && pointer.X <= bottomRight.X
+                   && pointer.Y >= topLeft.Y
+                   && pointer.Y <= bottomRight.Y;
+        }
+
         var screen = Forms.Screen.PrimaryScreen;
         if (screen is null) return false;
 
-        const int hotZoneWidth = 260;
-        const int hotZoneHeight = 4;
         var centerX = screen.Bounds.Left + screen.Bounds.Width / 2;
-        var left = centerX - hotZoneWidth / 2;
+        var left = centerX - HotZoneWindow.ZoneWidth / 2;
 
         return pointer.X >= left
-               && pointer.X <= left + hotZoneWidth
+               && pointer.X <= left + HotZoneWindow.ZoneWidth
                && pointer.Y >= screen.Bounds.Top
-               && pointer.Y <= screen.Bounds.Top + hotZoneHeight;
+               && pointer.Y <= screen.Bounds.Top + HotZoneWindow.ZoneHeight;
     }
 
     private void ExitApplication()
     {
+        _hotZoneWindow?.Close();
+        _hotZoneWindow = null;
+
         if (_mainWindow is not null)
         {
             _mainWindow.AllowClose = true;
@@ -179,6 +197,8 @@ public partial class App : Application
         }
 
         _trayService?.Dispose();
+        _hotZoneWindow?.Close();
+        _hotZoneWindow = null;
         _container?.Dispose();
         base.OnExit(e);
     }
