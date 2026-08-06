@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Reflection;
 using Mate.Services.Interfaces;
 using Microsoft.Win32;
 
@@ -68,13 +67,7 @@ public sealed class WindowsAutoStartService : IAutoStartService
             return Path.GetFullPath(processPath);
         }
 
-        var entryAssemblyPath = Assembly.GetEntryAssembly()?.Location;
-        if (!string.IsNullOrWhiteSpace(entryAssemblyPath))
-        {
-            var executablePath = Path.ChangeExtension(entryAssemblyPath, ".exe");
-            if (File.Exists(executablePath)) return Path.GetFullPath(executablePath);
-        }
-
-        return Path.GetFullPath(processPath ?? entryAssemblyPath ?? "Mate.exe");
+        var executablePath = Path.Combine(AppContext.BaseDirectory, "Mate.exe");
+        return Path.GetFullPath(executablePath);
     }
 }

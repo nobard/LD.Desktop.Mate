@@ -7,6 +7,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\MateTray.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>Mate</Product>
+    <Company>LD Desktop</Company>
   </PropertyGroup>
 
   <ItemGroup>
