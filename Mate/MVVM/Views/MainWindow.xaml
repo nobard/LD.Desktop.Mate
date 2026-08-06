@@ -34,7 +34,10 @@
         </Style>
     </Window.Resources>
 
+    <Viewbox Stretch="Fill">
     <Grid x:Name="WindowSurface"
+          Width="840"
+          Height="340"
           RenderTransformOrigin="0.5,0"
           RenderOptions.BitmapScalingMode="LowQuality">
         <Grid.CacheMode>
@@ -96,4 +99,5 @@
             <ContentControl Grid.Row="1" Grid.Column="2" Content="{Binding NavigationService.CurrentView}" />
         </Grid>
     </Grid>
+    </Viewbox>
 </Window>

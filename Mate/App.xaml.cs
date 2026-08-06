@@ -29,9 +29,11 @@ public partial class App : Application
 
         _container = AutofacConfig.GetConfiguredContainer();
         _mainWindow = _container.Resolve<MainWindow>();
+        _mainWindow.ApplyScreenScale();
         MainWindow = _mainWindow;
 
         _hotZoneWindow = new HotZoneWindow();
+        _hotZoneWindow.ApplyScale(_mainWindow.InterfaceScale);
         _hotZoneWindow.PositionAtTopCenter();
         _hotZoneWindow.Show();
 

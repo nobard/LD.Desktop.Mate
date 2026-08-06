@@ -12,6 +12,13 @@ namespace Mate.MVVM.Views;
 
 public partial class MainWindow : Window
 {
+    private const double DesignWidth = 840;
+    private const double DesignHeight = 340;
+    private const double ReferenceScreenWidth = 3072;
+    private const double ReferenceScreenHeight = 1728;
+    private const double MinimumInterfaceScale = 0.5;
+    private const double InterfaceScaleMultiplier = 1.2;
+
     private readonly DispatcherTimer _folderHoverTimer;
     private NavigationItemViewModel? _folderHoverItem;
     private int _animationVersion;
@@ -30,6 +37,21 @@ public partial class MainWindow : Window
     public bool AllowClose { get; set; }
 
     public bool IsClosingAnimation { get; private set; }
+
+    public double InterfaceScale { get; private set; } = 1;
+
+    public void ApplyScreenScale()
+    {
+        var widthScale = SystemParameters.PrimaryScreenWidth / ReferenceScreenWidth;
+        var heightScale = SystemParameters.PrimaryScreenHeight / ReferenceScreenHeight;
+        var screenScale = System.Math.Max(
+            MinimumInterfaceScale,
+            System.Math.Min(widthScale, heightScale));
+        InterfaceScale = screenScale * InterfaceScaleMultiplier;
+
+        Width = DesignWidth * InterfaceScale;
+        Height = DesignHeight * InterfaceScale;
+    }
 
     public void PositionAtTopCenter()
     {

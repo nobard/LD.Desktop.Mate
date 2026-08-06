@@ -20,6 +20,12 @@ public partial class HotZoneWindow : Window
         Closed += HotZoneWindow_Closed;
     }
 
+    public void ApplyScale(double scale)
+    {
+        Width = ZoneWidth * scale;
+        Height = System.Math.Max(3, ZoneHeight * scale);
+    }
+
     public void PositionAtTopCenter()
     {
         var workArea = SystemParameters.WorkArea;
