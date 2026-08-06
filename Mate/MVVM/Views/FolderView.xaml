@@ -128,20 +128,55 @@
         </Style>
     </UserControl.Resources>
 
-    <Border x:Name="DropSurface"
-            Margin="25,18,25,19"
-            Padding="16,14,16,0"
-            Background="Transparent"
-            BorderBrush="Transparent"
-            BorderThickness="1"
-            CornerRadius="12">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="42" />
-            </Grid.RowDefinitions>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="56" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <ScrollViewer Grid.Row="0"
+            <Grid Grid.Row="0" Margin="31,20,24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0,5,0,0">
+                    <TextBlock Text="{Binding SelectionSummary}"
+                               Foreground="#858585"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="  ·  "
+                               Foreground="#4C4C4C"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="#707070"
+                               FontSize="10"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <Button Style="{StaticResource FooterButton}"
+                            Content="Снять выбор"
+                            Command="{Binding ClearSelectionCommand}" />
+                    <Button Style="{StaticResource FooterButton}"
+                            Content="Удалить"
+                            Command="{Binding DeleteSelectedCommand}" />
+                    <Button Style="{StaticResource FooterButton}"
+                            Content="Очистить"
+                            Command="{Binding ClearFilesCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="31,11,0,19"
                           VerticalScrollBarVisibility="Visible"
                           HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Files}" Margin="0,0,8,0">
@@ -228,11 +263,11 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <Border Grid.Row="0"
+            <Border Grid.Row="1"
+                    Margin="31,11,24,19"
                     BorderBrush="{DynamicResource Theme.Divider}"
                     BorderThickness="1"
                     CornerRadius="11"
-                    Margin="0,2,0,14"
                     IsHitTestVisible="False">
                 <Border.Style>
                     <Style TargetType="Border">
@@ -252,19 +287,13 @@
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Row="1">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SelectionSummary}" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                    <TextBlock Text="  ·  " Foreground="#4C4C4C" FontSize="11" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="#707070" FontSize="10" VerticalAlignment="Center" />
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Style="{StaticResource FooterButton}" Content="Снять выбор" Command="{Binding ClearSelectionCommand}" />
-                    <Button Style="{StaticResource FooterButton}" Content="Удалить" Command="{Binding DeleteSelectedCommand}" />
-                    <Button Style="{StaticResource FooterButton}" Content="Очистить" Command="{Binding ClearFilesCommand}" />
-                </StackPanel>
-            </Grid>
-        </Grid>
-    </Border>
+        <Border x:Name="DropSurface"
+                Grid.RowSpan="2"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="1"
+                CornerRadius="12"
+                IsHitTestVisible="False"
+                Panel.ZIndex="20" />
+    </Grid>
 </UserControl>

@@ -298,14 +298,36 @@
                     </Style.Triggers>
                 </Style>
             </Border.Style>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="□" Foreground="#777777" FontSize="27" HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding EmptyMessage}"
-                           Foreground="#8C8C8C"
+            <Grid Height="58"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="26" />
+                </Grid.RowDefinitions>
+
+                <Canvas Width="24"
+                        Height="24"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Path Data="M 6,5 L 18,5 L 18,20 L 6,20 Z M 9,5 L 9,3 L 15,3 L 15,5 M 9,10 L 15,10 M 9,14 L 15,14"
+                          Stroke="#777777"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Fill="Transparent" />
+                </Canvas>
+                <TextBlock Grid.Row="1"
+                           Text="{Binding EmptyMessage}"
+                           Foreground="#888888"
                            FontSize="12"
+                           LineHeight="17"
+                           LineStackingStrategy="BlockLineHeight"
                            HorizontalAlignment="Center"
-                           Margin="0,10,0,0" />
-            </StackPanel>
+                           VerticalAlignment="Top"
+                           Margin="0,9,0,0" />
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
