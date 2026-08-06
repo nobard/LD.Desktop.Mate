@@ -22,6 +22,7 @@ public static class AutofacConfig
         builder.RegisterType<SnippetStorageService>().As<ISnippetStorageService>().SingleInstance();
         builder.RegisterType<PrivateBrowserService>().As<IPrivateBrowserService>().SingleInstance();
         builder.RegisterType<ThemeService>().As<IThemeService>().SingleInstance();
+        builder.RegisterType<WindowsAutoStartService>().As<IAutoStartService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {

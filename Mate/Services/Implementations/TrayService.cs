@@ -8,13 +8,16 @@ namespace Mate.Services.Implementations;
 public sealed class TrayService : ITrayService
 {
     private readonly IThemeService _themeService;
+    private readonly IAutoStartService _autoStartService;
     private readonly Dictionary<AppTheme, Forms.ToolStripMenuItem> _themeItems = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _menu;
+    private Forms.ToolStripMenuItem? _autoStartItem;
 
-    public TrayService(IThemeService themeService)
+    public TrayService(IThemeService themeService, IAutoStartService autoStartService)
     {
         _themeService = themeService;
+        _autoStartService = autoStartService;
         _themeService.ThemeChanged += ThemeService_ThemeChanged;
     }
 
@@ -37,6 +40,14 @@ public sealed class TrayService : ITrayService
         }
         UpdateThemeChecks();
         _menu.Items.Add(themeMenu);
+
+        _autoStartItem = new Forms.ToolStripMenuItem("Автозапуск")
+        {
+            CheckOnClick = false,
+            Checked = _autoStartService.IsEnabled
+        };
+        _autoStartItem.Click += AutoStartItem_Click;
+        _menu.Items.Add(_autoStartItem);
         _menu.Items.Add(new Forms.ToolStripSeparator());
 
         _menu.Items.Add("Выход", null, (_, _) => exitApplication());
@@ -61,10 +72,30 @@ public sealed class TrayService : ITrayService
         _notifyIcon = null;
         _menu?.Dispose();
         _menu = null;
+        _autoStartItem = null;
         _themeItems.Clear();
     }
 
     private void ThemeService_ThemeChanged(object? sender, EventArgs e) => UpdateThemeChecks();
+
+    private void AutoStartItem_Click(object? sender, EventArgs e)
+    {
+        if (_autoStartItem is null) return;
+
+        var shouldEnable = !_autoStartService.IsEnabled;
+        if (_autoStartService.SetEnabled(shouldEnable))
+        {
+            _autoStartItem.Checked = shouldEnable;
+            return;
+        }
+
+        _autoStartItem.Checked = _autoStartService.IsEnabled;
+        _notifyIcon?.ShowBalloonTip(
+            3000,
+            "Mate",
+            "Не удалось изменить настройку автозапуска.",
+            Forms.ToolTipIcon.Warning);
+    }
 
     private void UpdateThemeChecks()
     {
