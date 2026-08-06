@@ -32,6 +32,114 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="HeaderSourceItem" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="#B8B8B8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemSurface"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemSurface" Property="Background" Value="{DynamicResource Theme.SurfaceHover}" />
+                                <Setter Property="Foreground" Value="#EEEEEE" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="#E8E8E8" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HeaderSourceComboBox" TargetType="ComboBox">
+            <Setter Property="Width" Value="172" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Foreground" Value="#898989" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource HeaderSourceItem}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="DropDownToggle"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          Focusable="False"
+                                          ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="SourceSurface"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="0">
+                                            <Grid>
+                                                <ContentPresenter VerticalAlignment="Bottom"
+                                                                  HorizontalAlignment="Right"
+                                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                  ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                                                  TextElement.Foreground="{TemplateBinding Foreground}"
+                                                                  RecognizesAccessKey="True" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="#BEBEBE" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Fade">
+                                <Border MinWidth="{Binding ActualWidth, ElementName=DropDownToggle}"
+                                        MaxHeight="190"
+                                        Margin="0,4,0,0"
+                                        Padding="2"
+                                        Background="{DynamicResource Theme.SurfaceLow}"
+                                        BorderBrush="{DynamicResource Theme.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="7">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  CanContentScroll="True">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Viewbox Stretch="Fill">
@@ -54,16 +162,29 @@
             <Grid.RowDefinitions><RowDefinition Height="50" /><RowDefinition Height="*" /></Grid.RowDefinitions>
             <Grid.ColumnDefinitions><ColumnDefinition Width="72" /><ColumnDefinition Width="1" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Text="{Binding CurrentToolTitle}" Foreground="#9A9A9A" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="22,0,0,10" />
-            <TextBlock Grid.Row="0"
-                       Grid.ColumnSpan="3"
-                       Text="{Binding NavigationService.CurrentView.HeaderInfo}"
-                       Foreground="#898989"
-                       FontSize="11"
-                       HorizontalAlignment="Right"
-                       VerticalAlignment="Bottom"
-                       Margin="0,0,22,10"
-                       MaxWidth="300"
-                       TextTrimming="CharacterEllipsis" />
+            <ContentControl Grid.Row="0"
+                            Grid.ColumnSpan="3"
+                            Content="{Binding NavigationService.CurrentView.HeaderContent}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,22,10">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewModels:MusicViewModel}">
+                        <ComboBox Style="{StaticResource HeaderSourceComboBox}"
+                                  ItemsSource="{Binding Sources}"
+                                  SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                                  ToolTip="Выбрать источник воспроизведения">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontSize="11"
+                                               TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
             <ItemsControl Grid.Row="1" Grid.Column="0" ItemsSource="{Binding NavigationItems}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type viewModels:NavigationItemViewModel}">
@@ -80,7 +201,28 @@
                                     <Canvas x:Name="FolderIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 3,7 L 10,7 L 12,5 L 21,5 L 21,19 L 3,19 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeLineJoin="Round" Fill="Transparent" /></Canvas>
                                     <Canvas x:Name="ClipboardIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 6,5 L 18,5 L 18,20 L 6,20 Z M 9,5 L 9,3 L 15,3 L 15,5 M 9,10 L 15,10 M 9,14 L 15,14" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" StrokeLineJoin="Round" Fill="Transparent" /></Canvas>
                                     <Canvas x:Name="PinIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 8,3 L 16,3 L 16,8 L 19,11 L 19,13 L 13,13 L 13,21 L 11,21 L 11,13 L 5,13 L 5,11 L 8,8 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /></Canvas>
-                                    <Canvas x:Name="IncognitoIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 4,10 L 20,10 M 6.5,10 L 8.5,4.5 L 15.5,4.5 L 17.5,10 M 8,8 L 16,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent" /><Ellipse Canvas.Left="3" Canvas.Top="13" Width="7" Height="6" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" /><Ellipse Canvas.Left="14" Canvas.Top="13" Width="7" Height="6" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" /><Line X1="10" Y1="16" X2="14" Y2="16" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" /></Canvas>
+                                    <Canvas x:Name="IncognitoIcon" Width="24" Height="24" Visibility="Collapsed">
+                                        <Path Data="M 8.5,3.5 L 15.5,3.5 L 17,9 L 7,9 Z"
+                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                        <Path Data="M 3,10 C 7,11 17,11 21,10"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="2.2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Fill="Transparent" />
+                                        <Ellipse Canvas.Left="3.5" Canvas.Top="13" Width="7" Height="7"
+                                                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                 StrokeThickness="1.7" />
+                                        <Ellipse Canvas.Left="13.5" Canvas.Top="13" Width="7" Height="7"
+                                                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                 StrokeThickness="1.7" />
+                                        <Path Data="M 10.5,16.5 C 11.3,15.7 12.7,15.7 13.5,16.5"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.7"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Fill="Transparent" />
+                                    </Canvas>
                                     <Canvas x:Name="TranslateIcon" Width="24" Height="24" Visibility="Collapsed"><TextBlock Canvas.Left="1" Canvas.Top="0" Text="A" FontSize="18" FontWeight="SemiBold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /><TextBlock Canvas.Left="11" Canvas.Top="7" Text="文" FontSize="13" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /></Canvas>
                                 </Grid>
                             </Button>

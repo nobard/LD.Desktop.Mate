@@ -17,4 +17,6 @@ public interface IMediaSessionService : IDisposable
     Task SkipNextAsync();
 
     Task SeekAsync(TimeSpan position);
+
+    Task SelectSourceAsync(string sourceId);
 }

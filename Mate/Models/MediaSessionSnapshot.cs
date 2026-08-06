@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Mate.Models;
 
@@ -16,6 +17,10 @@ public sealed record MediaSessionSnapshot(
     bool CanSkipNext,
     bool CanSeek)
 {
+    public IReadOnlyList<MediaSourceSnapshot> Sources { get; init; } = Array.Empty<MediaSourceSnapshot>();
+
+    public string? SelectedSourceId { get; init; }
+
     public static MediaSessionSnapshot Empty { get; } = new(
         false,
         "Нет активного медиа",

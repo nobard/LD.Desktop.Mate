@@ -1,5 +1,7 @@
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -28,7 +30,9 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     private bool _canSkipNext;
     private bool _canSeek;
     private bool _isSeekPending;
+    private bool _isApplyingSourceSnapshot;
     private double _pendingSeekPercentage;
+    private MediaSourceSnapshot? _selectedSource;
 
     public MusicViewModel(IMediaSessionService mediaSessionService)
     {
@@ -65,7 +69,20 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
 
     public override string Description => "Текущий системный медиасеанс Windows.";
 
-    public override string HeaderInfo => Source;
+    public override object HeaderContent => this;
+
+    public ObservableCollection<MediaSourceSnapshot> Sources { get; } = new();
+
+    public MediaSourceSnapshot? SelectedSource
+    {
+        get => _selectedSource;
+        set
+        {
+            if (!SetProperty(ref _selectedSource, value)) return;
+            if (_isApplyingSourceSnapshot || value is null) return;
+            _ = ExecuteSafelyAsync(() => _mediaSessionService.SelectSourceAsync(value.Id));
+        }
+    }
 
     public string TrackTitle
     {
@@ -82,11 +99,7 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     public string Source
     {
         get => _source;
-        private set
-        {
-            if (!SetProperty(ref _source, value)) return;
-            OnPropertyChanged(nameof(HeaderInfo));
-        }
+        private set => SetProperty(ref _source, value);
     }
 
     public ImageSource? Thumbnail
@@ -162,6 +175,7 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
 
     private void ApplySnapshot(MediaSessionSnapshot snapshot)
     {
+        ApplySources(snapshot);
         TrackTitle = snapshot.Title;
         Artist = snapshot.Artist;
         Source = snapshot.Source;
@@ -178,6 +192,26 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
         SkipPreviousCommand.RaiseCanExecuteChanged();
         SkipNextCommand.RaiseCanExecuteChanged();
         NotifyTimelineChanged();
+    }
+
+    private void ApplySources(MediaSessionSnapshot snapshot)
+    {
+        _isApplyingSourceSnapshot = true;
+        try
+        {
+            if (!Sources.SequenceEqual(snapshot.Sources))
+            {
+                Sources.Clear();
+                foreach (var source in snapshot.Sources) Sources.Add(source);
+            }
+
+            SelectedSource = Sources.FirstOrDefault(source =>
+                string.Equals(source.Id, snapshot.SelectedSourceId, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            _isApplyingSourceSnapshot = false;
+        }
     }
 
     private async void SeekTimer_Tick(object? sender, EventArgs e)

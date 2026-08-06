@@ -8,5 +8,5 @@ public abstract class ToolViewModel : BaseViewModel
 
     public abstract string Description { get; }
 
-    public virtual string HeaderInfo => string.Empty;
+    public virtual object? HeaderContent => null;
 }

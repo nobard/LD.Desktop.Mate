@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Mate.Models;
@@ -17,6 +19,7 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
     private string _title = string.Empty;
     private string _artist = string.Empty;
     private byte[]? _thumbnail;
+    private bool _hasExplicitSourceSelection;
     private bool _disposed;
 
     public event Action<MediaSessionSnapshot>? SessionChanged;
@@ -75,6 +78,25 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
         await PublishSnapshotAsync(false);
     }
 
+    public async Task SelectSourceAsync(string sourceId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || _manager is null) return;
+
+        var session = _manager.GetSessions().FirstOrDefault(candidate =>
+            string.Equals(
+                candidate.SourceAppUserModelId,
+                sourceId,
+                StringComparison.OrdinalIgnoreCase));
+        if (session is null)
+        {
+            await ChangeCurrentSessionAsync();
+            return;
+        }
+
+        _hasExplicitSourceSelection = true;
+        await SetActiveSessionAsync(session);
+    }
+
     private async void Manager_CurrentSessionChanged(
         GlobalSystemMediaTransportControlsSessionManager sender,
         CurrentSessionChangedEventArgs args) => await ChangeCurrentSessionAsync();
@@ -85,8 +107,38 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
 
     private async Task ChangeCurrentSessionAsync()
     {
+        var manager = _manager;
+        if (manager is null)
+        {
+            await SetActiveSessionAsync(null);
+            return;
+        }
+
+        GlobalSystemMediaTransportControlsSession? nextSession = null;
+        if (_hasExplicitSourceSelection && _session is not null)
+        {
+            nextSession = manager.GetSessions().FirstOrDefault(candidate =>
+                string.Equals(
+                    candidate.SourceAppUserModelId,
+                    _session.SourceAppUserModelId,
+                    StringComparison.OrdinalIgnoreCase));
+            if (nextSession is null) _hasExplicitSourceSelection = false;
+        }
+
+        nextSession ??= manager.GetCurrentSession();
+        await SetActiveSessionAsync(nextSession);
+    }
+
+    private async Task SetActiveSessionAsync(GlobalSystemMediaTransportControlsSession? session)
+    {
+        if (ReferenceEquals(_session, session))
+        {
+            await PublishSnapshotAsync(false);
+            return;
+        }
+
         DetachSessionEvents();
-        _session = _manager?.GetCurrentSession();
+        _session = session;
         _title = string.Empty;
         _artist = string.Empty;
         _thumbnail = null;
@@ -132,7 +184,10 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
             var session = _session;
             if (session is null)
             {
-                SessionChanged?.Invoke(MediaSessionSnapshot.Empty);
+                SessionChanged?.Invoke(MediaSessionSnapshot.Empty with
+                {
+                    Sources = GetAvailableSources()
+                });
                 return;
             }
 
@@ -172,7 +227,11 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
                 controls.IsPlayEnabled || controls.IsPauseEnabled,
                 controls.IsPreviousEnabled,
                 controls.IsNextEnabled,
-                controls.IsPlaybackPositionEnabled));
+                controls.IsPlaybackPositionEnabled)
+            {
+                Sources = GetAvailableSources(),
+                SelectedSourceId = session.SourceAppUserModelId
+            });
         }
         catch
         {
@@ -208,6 +267,23 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
         }
 
         return string.Empty;
+    }
+
+    private IReadOnlyList<MediaSourceSnapshot> GetAvailableSources()
+    {
+        var sessions = _manager?.GetSessions();
+        if (sessions is null || sessions.Count == 0) return Array.Empty<MediaSourceSnapshot>();
+
+        var sources = new List<MediaSourceSnapshot>(sessions.Count);
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var session in sessions)
+        {
+            var id = session.SourceAppUserModelId;
+            if (string.IsNullOrWhiteSpace(id) || !seenIds.Add(id)) continue;
+            sources.Add(new MediaSourceSnapshot(id, GetFriendlySourceName(id)));
+        }
+
+        return sources;
     }
 
     private static string GetFriendlySourceName(string sourceAppId)
