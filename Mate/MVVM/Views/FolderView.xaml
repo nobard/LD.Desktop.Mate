@@ -90,14 +90,16 @@
         </Style>
 
         <Style x:Key="FooterButton" TargetType="Button">
-            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="13,0" />
             <Setter Property="Margin" Value="8,0,0,0" />
-            <Setter Property="Foreground" Value="#BDBDBD" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
+            <Setter Property="Foreground" Value="#D5D5D5" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.BorderStrong}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -105,13 +107,16 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="FooterSurface" Property="Background" Value="{DynamicResource Theme.SurfacePressed}" />
+                                <Setter TargetName="FooterSurface" Property="Background" Value="{DynamicResource Theme.ButtonHover}" />
                                 <Setter Property="Foreground" Value="#F0F0F0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="FooterSurface" Property="Background" Value="{DynamicResource Theme.ButtonPressed}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35" />
