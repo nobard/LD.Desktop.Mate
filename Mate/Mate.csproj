@@ -6,7 +6,12 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\MateTray.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\MateTray.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.3.0" />

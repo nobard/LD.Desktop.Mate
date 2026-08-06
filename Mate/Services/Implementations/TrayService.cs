@@ -13,6 +13,7 @@ public sealed class TrayService : ITrayService
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _menu;
     private Forms.ToolStripMenuItem? _autoStartItem;
+    private System.Drawing.Icon? _trayIcon;
 
     public TrayService(IThemeService themeService, IAutoStartService autoStartService)
     {
@@ -52,9 +53,10 @@ public sealed class TrayService : ITrayService
 
         _menu.Items.Add("Выход", null, (_, _) => exitApplication());
 
+        _trayIcon = LoadTrayIcon();
         _notifyIcon = new Forms.NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = _trayIcon,
             Text = "Mate",
             ContextMenuStrip = _menu,
             Visible = true
@@ -70,6 +72,8 @@ public sealed class TrayService : ITrayService
         _themeService.ThemeChanged -= ThemeService_ThemeChanged;
         _notifyIcon?.Dispose();
         _notifyIcon = null;
+        _trayIcon?.Dispose();
+        _trayIcon = null;
         _menu?.Dispose();
         _menu = null;
         _autoStartItem = null;
@@ -103,5 +107,26 @@ public sealed class TrayService : ITrayService
         {
             pair.Value.Checked = pair.Key == _themeService.CurrentTheme;
         }
+    }
+
+    private static System.Drawing.Icon LoadTrayIcon()
+    {
+        try
+        {
+            var resource = System.Windows.Application.GetResourceStream(
+                new Uri("pack://application:,,,/Assets/MateTray.ico", UriKind.Absolute));
+            if (resource is not null)
+            {
+                using var stream = resource.Stream;
+                using var icon = new System.Drawing.Icon(stream);
+                return (System.Drawing.Icon)icon.Clone();
+            }
+        }
+        catch
+        {
+            // Fall back to a system icon if the packaged resource cannot be read.
+        }
+
+        return (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
     }
 }
