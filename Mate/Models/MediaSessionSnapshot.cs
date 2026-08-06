@@ -13,7 +13,8 @@ public sealed record MediaSessionSnapshot(
     byte[]? Thumbnail,
     bool CanTogglePlayPause,
     bool CanSkipPrevious,
-    bool CanSkipNext)
+    bool CanSkipNext,
+    bool CanSeek)
 {
     public static MediaSessionSnapshot Empty { get; } = new(
         false,
@@ -24,6 +25,7 @@ public sealed record MediaSessionSnapshot(
         TimeSpan.Zero,
         TimeSpan.Zero,
         null,
+        false,
         false,
         false,
         false);

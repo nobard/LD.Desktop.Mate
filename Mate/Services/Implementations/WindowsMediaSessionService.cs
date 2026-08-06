@@ -61,6 +61,20 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
         await session.TrySkipNextAsync();
     }
 
+    public async Task SeekAsync(TimeSpan position)
+    {
+        var session = _session;
+        if (session is null) return;
+
+        var timeline = session.GetTimelineProperties();
+        var target = timeline.StartTime + position;
+        if (target < timeline.StartTime) target = timeline.StartTime;
+        if (timeline.EndTime > timeline.StartTime && target > timeline.EndTime) target = timeline.EndTime;
+
+        await session.TryChangePlaybackPositionAsync(target.Ticks);
+        await PublishSnapshotAsync(false);
+    }
+
     private async void Manager_CurrentSessionChanged(
         GlobalSystemMediaTransportControlsSessionManager sender,
         CurrentSessionChangedEventArgs args) => await ChangeCurrentSessionAsync();
@@ -157,7 +171,8 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
                 _thumbnail,
                 controls.IsPlayEnabled || controls.IsPauseEnabled,
                 controls.IsPreviousEnabled,
-                controls.IsNextEnabled));
+                controls.IsNextEnabled,
+                controls.IsPlaybackPositionEnabled));
         }
         catch
         {

@@ -15,6 +15,7 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
 {
     private readonly IMediaSessionService _mediaSessionService;
     private readonly DispatcherTimer _positionTimer;
+    private readonly DispatcherTimer _seekTimer;
     private string _trackTitle = "Нет активного медиа";
     private string _artist = "Откройте видео или музыку";
     private string _source = string.Empty;
@@ -25,6 +26,9 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     private bool _canTogglePlayPause;
     private bool _canSkipPrevious;
     private bool _canSkipNext;
+    private bool _canSeek;
+    private bool _isSeekPending;
+    private double _pendingSeekPercentage;
 
     public MusicViewModel(IMediaSessionService mediaSessionService)
     {
@@ -47,6 +51,12 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
         };
         _positionTimer.Tick += PositionTimer_Tick;
         _positionTimer.Start();
+
+        _seekTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(140)
+        };
+        _seekTimer.Tick += SeekTimer_Tick;
 
         _ = ExecuteSafelyAsync(_mediaSessionService.InitializeAsync);
     }
@@ -96,9 +106,34 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
 
     public string ElapsedTime => FormatTime(_position);
 
+    public string DurationTime => FormatTime(_duration);
+
     public double ProgressPercentage => _duration.TotalMilliseconds <= 0
         ? 0
         : Math.Clamp(_position.TotalMilliseconds / _duration.TotalMilliseconds * 100, 0, 100);
+
+    public double SeekPercentage
+    {
+        get => ProgressPercentage;
+        set
+        {
+            if (!CanSeek || _duration <= TimeSpan.Zero) return;
+
+            _pendingSeekPercentage = Math.Clamp(value, 0, 100);
+            _position = TimeSpan.FromMilliseconds(
+                _duration.TotalMilliseconds * _pendingSeekPercentage / 100);
+            _isSeekPending = true;
+            NotifyTimelineChanged();
+            _seekTimer.Stop();
+            _seekTimer.Start();
+        }
+    }
+
+    public bool CanSeek
+    {
+        get => _canSeek;
+        private set => SetProperty(ref _canSeek, value);
+    }
 
     public DelegateCommand TogglePlayPauseCommand { get; }
 
@@ -125,17 +160,43 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
         Artist = snapshot.Artist;
         Source = snapshot.Source;
         IsPlaying = snapshot.IsPlaying;
-        _position = snapshot.Position;
         _duration = snapshot.Duration;
+        if (!_isSeekPending) _position = snapshot.Position;
         Thumbnail = CreateImage(snapshot.Thumbnail);
 
         _canTogglePlayPause = snapshot.CanTogglePlayPause;
         _canSkipPrevious = snapshot.CanSkipPrevious;
         _canSkipNext = snapshot.CanSkipNext;
+        CanSeek = snapshot.CanSeek && snapshot.Duration > TimeSpan.Zero;
         TogglePlayPauseCommand.RaiseCanExecuteChanged();
         SkipPreviousCommand.RaiseCanExecuteChanged();
         SkipNextCommand.RaiseCanExecuteChanged();
         NotifyTimelineChanged();
+    }
+
+    private async void SeekTimer_Tick(object? sender, EventArgs e)
+    {
+        _seekTimer.Stop();
+        if (!CanSeek || _duration <= TimeSpan.Zero)
+        {
+            _isSeekPending = false;
+            return;
+        }
+
+        var target = TimeSpan.FromMilliseconds(
+            _duration.TotalMilliseconds * _pendingSeekPercentage / 100);
+        try
+        {
+            await _mediaSessionService.SeekAsync(target);
+        }
+        catch
+        {
+            // Some media sessions expose a timeline but reject seeking.
+        }
+        finally
+        {
+            _isSeekPending = false;
+        }
     }
 
     private void PositionTimer_Tick(object? sender, EventArgs e)
@@ -151,6 +212,8 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     {
         OnPropertyChanged(nameof(ElapsedTime));
         OnPropertyChanged(nameof(ProgressPercentage));
+        OnPropertyChanged(nameof(SeekPercentage));
+        OnPropertyChanged(nameof(DurationTime));
     }
 
     private static ImageSource? CreateImage(byte[]? bytes)
@@ -198,6 +261,8 @@ public sealed class MusicViewModel : ToolViewModel, IDisposable
     {
         _positionTimer.Stop();
         _positionTimer.Tick -= PositionTimer_Tick;
+        _seekTimer.Stop();
+        _seekTimer.Tick -= SeekTimer_Tick;
         _mediaSessionService.SessionChanged -= MediaSessionService_SessionChanged;
     }
 }
