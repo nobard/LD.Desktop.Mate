@@ -53,7 +53,7 @@ jobs:
                   $branch = 'branch'
               }
               if ($branch.Length -gt 32) {
-                  $branch = $branch[..31].TrimEnd('-')
+                  $branch = $branch.Substring(0, 32).TrimEnd('-')
               }
 
               $version = "$env:BASE_VERSION-beta.$env:GITHUB_RUN_NUMBER.$env:GITHUB_RUN_ATTEMPT.$branch"
