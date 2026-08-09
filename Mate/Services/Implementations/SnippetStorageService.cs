@@ -67,6 +67,36 @@ public sealed class SnippetStorageService : ISnippetStorageService
         return item;
     }
 
+    public SnippetItem Update(Guid id, SnippetType type, string comment, string value)
+    {
+        lock (_sync)
+        {
+            var index = _items.FindIndex(candidate => candidate.Id == id);
+            if (index < 0) throw new InvalidOperationException("Snippet was not found.");
+
+            var previousItem = _items[index];
+            var updatedItem = previousItem with
+            {
+                Type = type,
+                Comment = comment.Trim(),
+                Value = value.Trim()
+            };
+
+            _items[index] = updatedItem;
+            try
+            {
+                SaveItems();
+            }
+            catch
+            {
+                _items[index] = previousItem;
+                throw;
+            }
+
+            return updatedItem;
+        }
+    }
+
     public void Delete(Guid id)
     {
         lock (_sync)

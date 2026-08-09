@@ -10,5 +10,7 @@ public interface ISnippetStorageService
 
     SnippetItem Add(SnippetType type, string comment, string value);
 
+    SnippetItem Update(Guid id, SnippetType type, string comment, string value);
+
     void Delete(Guid id);
 }

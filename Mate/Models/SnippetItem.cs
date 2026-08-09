@@ -7,7 +7,8 @@ public enum SnippetType
     Link,
     Email,
     Phone,
-    User
+    User,
+    Text
 }
 
 public sealed record SnippetItem(

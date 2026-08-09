@@ -16,10 +16,11 @@ public sealed class SnippetsViewModel : ToolViewModel
     private readonly ISnippetStorageService _storageService;
     private string _searchQuery = string.Empty;
     private bool _isEditorOpen;
-    private SnippetType _selectedType = SnippetType.Link;
+    private SnippetType _selectedType = SnippetType.Text;
     private string _newComment = string.Empty;
     private string _newValue = string.Empty;
     private string _formError = string.Empty;
+    private SnippetItemViewModel? _editingItem;
 
     public SnippetsViewModel(ISnippetStorageService storageService)
     {
@@ -34,6 +35,7 @@ public sealed class SnippetsViewModel : ToolViewModel
         FilteredItems.Filter = FilterItems;
 
         CopyItemCommand = new DelegateCommand(CopyItem);
+        EditItemCommand = new DelegateCommand(EditItem);
         DeleteItemCommand = new DelegateCommand(DeleteItem);
         OpenEditorCommand = new DelegateCommand(_ => OpenEditor());
         ClearSearchCommand = new DelegateCommand(_ => SearchQuery = string.Empty, _ => HasSearchQuery);
@@ -51,6 +53,8 @@ public sealed class SnippetsViewModel : ToolViewModel
     public ICollectionView FilteredItems { get; }
 
     public DelegateCommand CopyItemCommand { get; }
+
+    public DelegateCommand EditItemCommand { get; }
 
     public DelegateCommand DeleteItemCommand { get; }
 
@@ -87,8 +91,23 @@ public sealed class SnippetsViewModel : ToolViewModel
     public SnippetType SelectedType
     {
         get => _selectedType;
-        private set => SetProperty(ref _selectedType, value);
+        private set
+        {
+            if (!SetProperty(ref _selectedType, value)) return;
+            OnPropertyChanged(nameof(IsTextTypeSelected));
+            OnPropertyChanged(nameof(IsLinkTypeSelected));
+            OnPropertyChanged(nameof(IsEmailTypeSelected));
+            OnPropertyChanged(nameof(IsPhoneTypeSelected));
+        }
     }
+
+    public bool IsTextTypeSelected => SelectedType == SnippetType.Text;
+
+    public bool IsLinkTypeSelected => SelectedType == SnippetType.Link;
+
+    public bool IsEmailTypeSelected => SelectedType is SnippetType.Email or SnippetType.User;
+
+    public bool IsPhoneTypeSelected => SelectedType == SnippetType.Phone;
 
     public string NewComment
     {
@@ -123,6 +142,8 @@ public sealed class SnippetsViewModel : ToolViewModel
 
     private void OpenEditor()
     {
+        SetEditingItem(null);
+        SelectedType = SnippetType.Text;
         NewComment = string.Empty;
         NewValue = string.Empty;
         FormError = string.Empty;
@@ -133,14 +154,32 @@ public sealed class SnippetsViewModel : ToolViewModel
     {
         IsEditorOpen = false;
         FormError = string.Empty;
+        SetEditingItem(null);
     }
 
     private void AddItem()
     {
         try
         {
-            var item = _storageService.Add(SelectedType, NewComment, NewValue);
-            Items.Insert(0, new SnippetItemViewModel(item));
+            if (_editingItem is null)
+            {
+                var item = _storageService.Add(SelectedType, NewComment, NewValue);
+                Items.Insert(0, new SnippetItemViewModel(item));
+            }
+            else
+            {
+                var itemIndex = Items.IndexOf(_editingItem);
+                var updatedItem = _storageService.Update(
+                    _editingItem.Id,
+                    SelectedType,
+                    NewComment,
+                    NewValue);
+                if (itemIndex >= 0)
+                {
+                    Items[itemIndex] = new SnippetItemViewModel(updatedItem);
+                }
+            }
+
             FilteredItems.Refresh();
             OnPropertyChanged(nameof(IsEmpty));
             OnPropertyChanged(nameof(EmptyMessage));
@@ -150,6 +189,23 @@ public sealed class SnippetsViewModel : ToolViewModel
         {
             FormError = "Не удалось сохранить заготовку";
         }
+    }
+
+    private void EditItem(object? parameter)
+    {
+        if (parameter is not SnippetItemViewModel item) return;
+
+        SetEditingItem(item);
+        SelectedType = item.Type;
+        NewComment = item.Comment;
+        NewValue = item.Value;
+        FormError = string.Empty;
+        IsEditorOpen = true;
+    }
+
+    private void SetEditingItem(SnippetItemViewModel? item)
+    {
+        _editingItem = item;
     }
 
     private async void CopyItem(object? parameter)
@@ -226,6 +282,7 @@ public sealed class SnippetItemViewModel : ObservableObject
 
     public string TypeDisplay => Type switch
     {
+        SnippetType.Text => "Текст",
         SnippetType.Link => "Ссылка",
         SnippetType.Email => "Почта",
         SnippetType.Phone => "Телефон",
@@ -237,6 +294,7 @@ public sealed class SnippetItemViewModel : ObservableObject
 
     public string Icon => Type switch
     {
+        SnippetType.Text => "T",
         SnippetType.Link => "\uE71B",
         SnippetType.Email => "@",
         SnippetType.Phone => "\uE717",
