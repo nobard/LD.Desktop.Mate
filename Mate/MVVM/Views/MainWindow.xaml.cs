@@ -31,6 +31,9 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _folderHoverTimer;
     private NavigationItemViewModel? _folderHoverItem;
     private int _animationVersion;
+    private int _navigationScrollAnimationVersion;
+    private double _navigationTargetOffset;
+    private bool _isNavigationScrollAnimating;
     private bool _closeCanBeCancelled;
     private bool? _navigationFadeTop;
     private bool? _navigationFadeBottom;
@@ -213,8 +216,11 @@ public partial class MainWindow : Window
         var maximumOffset = NavigationScrollViewer.ScrollableHeight;
         if (maximumOffset <= 0) return;
 
+        var startingTarget = _isNavigationScrollAnimating
+            ? _navigationTargetOffset
+            : currentOffset;
         var targetOffset = System.Math.Clamp(
-            currentOffset + direction * NavigationScrollStep,
+            startingTarget + direction * NavigationScrollStep,
             0,
             maximumOffset);
         if (direction > 0 && maximumOffset - targetOffset < NavigationScrollStep / 2)
@@ -226,6 +232,18 @@ public partial class MainWindow : Window
             targetOffset = 0;
         }
 
+        if (System.Math.Abs(targetOffset - _navigationTargetOffset) < 0.1
+            && _isNavigationScrollAnimating)
+        {
+            return;
+        }
+
+        var animationVersion = ++_navigationScrollAnimationVersion;
+        _navigationTargetOffset = targetOffset;
+        _isNavigationScrollAnimating = true;
+
+        // Capture the actual visual position before replacing an unfinished animation.
+        currentOffset = NavigationScrollViewer.VerticalOffset;
         BeginAnimation(NavigationScrollOffsetProperty, null);
         NavigationScrollOffset = currentOffset;
 
@@ -239,8 +257,16 @@ public partial class MainWindow : Window
         };
         animation.Completed += (_, _) =>
         {
+            if (animationVersion != _navigationScrollAnimationVersion) return;
+
+            var finalOffset = System.Math.Clamp(
+                targetOffset,
+                0,
+                NavigationScrollViewer.ScrollableHeight);
             BeginAnimation(NavigationScrollOffsetProperty, null);
-            NavigationScrollOffset = targetOffset;
+            NavigationScrollOffset = finalOffset;
+            _navigationTargetOffset = finalOffset;
+            _isNavigationScrollAnimating = false;
         };
 
         BeginAnimation(
