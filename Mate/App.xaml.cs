@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,7 +24,9 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private MainWindowViewModel? _mainWindowViewModel;
     private HotZoneWindow? _hotZoneWindow;
-    private NotificationPopupWindow? _notificationPopupWindow;
+    private readonly Queue<MateNotification> _pendingNotificationPopups = new();
+    private readonly List<NotificationPopupWindow> _notificationPopupWindows = new();
+    private readonly List<NotificationPopupWindow> _activeNotificationPopups = new();
     private DispatcherTimer? _pointerTimer;
     private DispatcherTimer? _updateTimer;
     private CancellationTokenSource? _updateCancellation;
@@ -64,8 +67,14 @@ public partial class App : Application
         _hotZoneWindow.Show();
 
         _notificationCenterService = _container.Resolve<INotificationCenterService>();
-        _notificationPopupWindow = new NotificationPopupWindow();
-        _notificationPopupWindow.ApplyScale(_mainWindow.InterfaceScale);
+        for (var index = 0; index < 2; index++)
+        {
+            var notificationPopupWindow = new NotificationPopupWindow();
+            notificationPopupWindow.ApplyScale(_mainWindow.InterfaceScale);
+            notificationPopupWindow.NotificationActivated += NotificationPopupWindow_NotificationActivated;
+            notificationPopupWindow.NotificationHidden += NotificationPopupWindow_NotificationHidden;
+            _notificationPopupWindows.Add(notificationPopupWindow);
+        }
         _notificationCenterService.NotificationReceived += NotificationCenterService_NotificationReceived;
 
         _trayService = _container.Resolve<ITrayService>();
@@ -276,16 +285,82 @@ public partial class App : Application
         object? sender,
         MateNotification notification)
     {
-        if (_notificationPopupWindow is null) return;
+        if (_notificationPopupWindows.Count == 0) return;
 
         if (Dispatcher.CheckAccess())
         {
-            _notificationPopupWindow.ShowNotification(notification);
+            EnqueueNotificationPopup(notification);
             return;
         }
 
         Dispatcher.BeginInvoke(
-            new Action(() => _notificationPopupWindow?.ShowNotification(notification)));
+            new Action(() => EnqueueNotificationPopup(notification)));
+    }
+
+    private void EnqueueNotificationPopup(MateNotification notification)
+    {
+        _pendingNotificationPopups.Enqueue(notification);
+        ShowPendingNotificationPopups();
+    }
+
+    private void ShowPendingNotificationPopups()
+    {
+        while (_pendingNotificationPopups.Count > 0 && _activeNotificationPopups.Count < 2)
+        {
+            NotificationPopupWindow? availablePopup = null;
+            foreach (var popup in _notificationPopupWindows)
+            {
+                if (popup.IsBusy || _activeNotificationPopups.Contains(popup)) continue;
+                availablePopup = popup;
+                break;
+            }
+
+            if (availablePopup is null) return;
+
+            var notification = _pendingNotificationPopups.Dequeue();
+            var stackIndex = _activeNotificationPopups.Count;
+            _activeNotificationPopups.Add(availablePopup);
+            if (!availablePopup.TryShowNotification(notification, stackIndex))
+            {
+                _activeNotificationPopups.Remove(availablePopup);
+                _pendingNotificationPopups.Enqueue(notification);
+                return;
+            }
+        }
+    }
+
+    private void NotificationPopupWindow_NotificationHidden(
+        object? sender,
+        MateNotification notification)
+    {
+        if (sender is not NotificationPopupWindow hiddenPopup) return;
+
+        _activeNotificationPopups.Remove(hiddenPopup);
+        for (var index = 0; index < _activeNotificationPopups.Count; index++)
+        {
+            _activeNotificationPopups[index].SetStackIndex(index, animate: true);
+        }
+
+        ShowPendingNotificationPopups();
+    }
+
+    private void NotificationPopupWindow_NotificationActivated(
+        object? sender,
+        MateNotification notification)
+    {
+        if (notification.ActionId != MateNotificationActions.OpenPomodoro) return;
+
+        _mainWindowViewModel?.NavigateTo<PomodoroViewModel>();
+        if (_mainWindow is null) return;
+
+        if (_mainWindow.IsVisible)
+        {
+            _mainWindow.CancelCloseAnimation(force: true);
+            _mainWindow.Activate();
+            return;
+        }
+
+        ShowPanel(activate: true);
     }
 
     private bool IsPointerInsidePanel(System.Drawing.Point pointer)
@@ -366,8 +441,15 @@ public partial class App : Application
         {
             _notificationCenterService.NotificationReceived -= NotificationCenterService_NotificationReceived;
         }
-        _notificationPopupWindow?.Dispose();
-        _notificationPopupWindow = null;
+        foreach (var notificationPopupWindow in _notificationPopupWindows)
+        {
+            notificationPopupWindow.NotificationActivated -= NotificationPopupWindow_NotificationActivated;
+            notificationPopupWindow.NotificationHidden -= NotificationPopupWindow_NotificationHidden;
+            notificationPopupWindow.Dispose();
+        }
+        _notificationPopupWindows.Clear();
+        _activeNotificationPopups.Clear();
+        _pendingNotificationPopups.Clear();
         _notificationCenterService = null;
 
         _trayService?.Dispose();

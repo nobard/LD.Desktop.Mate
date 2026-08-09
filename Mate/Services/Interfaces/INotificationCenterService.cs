@@ -17,7 +17,9 @@ public interface INotificationCenterService
         string message,
         MateNotificationKind kind = MateNotificationKind.Information,
         string? key = null,
-        bool showBanner = true);
+        bool showBanner = true,
+        bool isPersistent = false,
+        string? actionId = null);
 
     void Clear();
 

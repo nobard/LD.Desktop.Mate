@@ -23,6 +23,7 @@
             <DataTemplate DataType="{x:Type vms:IncognitoViewModel}"><views:IncognitoView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:TranslatorViewModel}"><views:TranslatorView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:NotificationsViewModel}"><views:NotificationsView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vms:PomodoroViewModel}"><views:PomodoroView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -47,7 +47,9 @@ public sealed class NotificationCenterService : INotificationCenterService
         string message,
         MateNotificationKind kind = MateNotificationKind.Information,
         string? key = null,
-        bool showBanner = true)
+        bool showBanner = true,
+        bool isPersistent = false,
+        string? actionId = null)
     {
         title = title.Trim();
         message = message.Trim();
@@ -62,6 +64,8 @@ public sealed class NotificationCenterService : INotificationCenterService
             Title = title,
             Message = message,
             Kind = kind,
+            IsPersistent = isPersistent,
+            ActionId = string.IsNullOrWhiteSpace(actionId) ? null : actionId.Trim(),
             CreatedAt = DateTimeOffset.Now
         };
 

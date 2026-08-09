@@ -1,0 +1,389 @@
+<UserControl x:Class="Mate.MVVM.Views.PomodoroView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
+    <UserControl.Resources>
+        <Style x:Key="TimerButton" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="5,0" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="Foreground" Value="#C8C8C8" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.BorderStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonHover}" />
+                                <Setter Property="Foreground" Value="#F0F0F0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonPressed}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryTimerButton"
+               TargetType="Button"
+               BasedOn="{StaticResource TimerButton}">
+            <Setter Property="MinWidth" Value="112" />
+            <Setter Property="Foreground" Value="#171717" />
+            <Setter Property="Background" Value="#DEDEDE" />
+            <Setter Property="BorderBrush" Value="#ECECEC" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#F0F0F0" />
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#F6F6F6" />
+                                <Setter Property="Foreground" Value="#111111" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="#C8C8C8" />
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#D5D5D5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TimerProgress" TargetType="ProgressBar">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ProgressTrack}" />
+            <Setter Property="Foreground" Value="#CFCFCF" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="2"
+                                ClipToBounds="True">
+                            <Grid x:Name="PART_Track">
+                                <Border x:Name="PART_Indicator"
+                                        Background="{TemplateBinding Foreground}"
+                                        CornerRadius="2"
+                                        HorizontalAlignment="Left" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SettingsTextBox"
+               TargetType="TextBox"
+               BasedOn="{StaticResource MateTextBoxBase}">
+            <Setter Property="Width" Value="104" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Foreground" Value="#E2E2E2" />
+            <Setter Property="Background" Value="{DynamicResource Theme.SearchBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.BorderStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="MaxLength" Value="3" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Surface"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="#777777" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="31,11,24,19">
+        <Border Background="{DynamicResource Theme.SurfaceLow}"
+                BorderBrush="{DynamicResource Theme.Border}"
+                BorderThickness="1"
+                CornerRadius="11">
+            <Grid>
+                <Button Content="Настроить"
+                        Command="{Binding OpenSettingsCommand}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,13,13,0">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource TimerButton}">
+                            <Setter Property="Height" Value="28" />
+                            <Setter Property="MinWidth" Value="76" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Padding" Value="11,0" />
+                            <Setter Property="FontSize" Value="10" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <StackPanel Width="430"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="{Binding PhaseTitle}"
+                               Foreground="#8F8F8F"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+
+                    <TextBlock Text="{Binding TimeText}"
+                               Width="230"
+                               Foreground="#F0F0F0"
+                               FontSize="62"
+                               FontWeight="Bold"
+                               FontFamily="Consolas"
+                               LineHeight="68"
+                               Margin="0,4,0,0"
+                               TextAlignment="Center"
+                               Typography.NumeralAlignment="Tabular"
+                               Typography.NumeralStyle="Lining"
+                               HorizontalAlignment="Center" />
+
+                    <ProgressBar Style="{StaticResource TimerProgress}"
+                                 Width="320"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding RemainingPercentage, Mode=OneWay}"
+                                 Margin="0,5,0,0" />
+
+                    <TextBlock Text="{Binding PhaseDescription}"
+                               Foreground="#858585"
+                               FontSize="11"
+                               Margin="0,12,0,0"
+                               HorizontalAlignment="Center" />
+
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,7,0,0"
+                                HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding CycleText}"
+                                   Foreground="#A0A0A0"
+                                   FontSize="10" />
+                        <TextBlock Text="  ·  "
+                                   Foreground="#4F4F4F"
+                                   FontSize="10" />
+                        <TextBlock Text="{Binding CompletedText}"
+                                   Foreground="#6F6F6F"
+                                   FontSize="10" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Center">
+                        <Button Content="Сбросить"
+                                Style="{StaticResource TimerButton}"
+                                Command="{Binding ResetCommand}" />
+                        <Button Content="{Binding PrimaryButtonText}"
+                                Style="{StaticResource PrimaryTimerButton}"
+                                Command="{Binding StartPauseCommand}" />
+                        <Button Content="Пропустить"
+                                Style="{StaticResource TimerButton}"
+                                Command="{Binding SkipCommand}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Grid Width="530"
+                      Margin="0,15"
+                      HorizontalAlignment="Center">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="24" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="ПАРАМЕТРЫ ЦИКЛА"
+                               Foreground="#8F8F8F"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button Content="По умолчанию"
+                                Command="{Binding ResetSettingsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource TimerButton}">
+                                    <Setter Property="Height" Value="30" />
+                                    <Setter Property="MinWidth" Value="96" />
+                                    <Setter Property="Margin" Value="0,0,6,0" />
+                                    <Setter Property="Padding" Value="12,0" />
+                                    <Setter Property="FontSize" Value="10" />
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Сохранить"
+                                Command="{Binding SaveSettingsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource TimerButton}">
+                                    <Setter Property="Height" Value="30" />
+                                    <Setter Property="MinWidth" Value="84" />
+                                    <Setter Property="Margin" Value="0,0,6,0" />
+                                    <Setter Property="Padding" Value="12,0" />
+                                    <Setter Property="FontSize" Value="10" />
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="×"
+                                Command="{Binding CancelSettingsCommand}"
+                                ToolTip="Закрыть">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource TimerButton}">
+                                    <Setter Property="Width" Value="30" />
+                                    <Setter Property="MinWidth" Value="0" />
+                                    <Setter Property="Height" Value="30" />
+                                    <Setter Property="Margin" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="FontSize" Value="16" />
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="Фокус"
+                                       Foreground="#A0A0A0"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center" />
+                            <TextBox Text="{Binding EditingFocusMinutes, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource SettingsTextBox}"
+                                     Margin="0,7,0,0" />
+                            <TextBlock Text="1–180 мин"
+                                       Foreground="#626262"
+                                       FontSize="9"
+                                       Margin="0,5,0,0"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="Короткий"
+                                       Foreground="#A0A0A0"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center" />
+                            <TextBox Text="{Binding EditingShortBreakMinutes, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource SettingsTextBox}"
+                                     Margin="0,7,0,0" />
+                            <TextBlock Text="1–60 мин"
+                                       Foreground="#626262"
+                                       FontSize="9"
+                                       Margin="0,5,0,0"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="Длинный"
+                                       Foreground="#A0A0A0"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center" />
+                            <TextBox Text="{Binding EditingLongBreakMinutes, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource SettingsTextBox}"
+                                     Margin="0,7,0,0" />
+                            <TextBlock Text="1–120 мин"
+                                       Foreground="#626262"
+                                       FontSize="9"
+                                       Margin="0,5,0,0"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                            <TextBlock Text="Подходов"
+                                       Foreground="#A0A0A0"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center" />
+                            <TextBox Text="{Binding EditingSessionsBeforeLongBreak, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource SettingsTextBox}"
+                                     Margin="0,7,0,0" />
+                            <TextBlock Text="1–12"
+                                       Foreground="#626262"
+                                       FontSize="9"
+                                       Margin="0,5,0,0"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Grid.Row="2"
+                               Text="Сохранение сбросит текущий цикл"
+                               Foreground="#666666"
+                               FontSize="9"
+                               VerticalAlignment="Bottom" />
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding SettingsError}"
+                               Foreground="#B78383"
+                               FontSize="9"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Mate.MVVM.Core;
 using Mate.Services.Interfaces;
 
@@ -24,7 +25,8 @@ public sealed class MainWindowViewModel : BaseViewModel
             new("⚑", "Заготовки", typeof(SnippetsViewModel)),
             new("◉", "Инкогнито", typeof(IncognitoViewModel)),
             new("文", "Переводчик", typeof(TranslatorViewModel)),
-            new("●", "Уведомления", typeof(NotificationsViewModel))
+            new("●", "Уведомления", typeof(NotificationsViewModel)),
+            new("◌", "Помодоро", typeof(PomodoroViewModel))
         };
         NavigateCommand = new DelegateCommand(Navigate);
         OpenUpdateCommand = new DelegateCommand(
@@ -86,6 +88,13 @@ public sealed class MainWindowViewModel : BaseViewModel
         OpenUpdateCommand.RaiseCanExecuteChanged();
     }
 
+    public void NavigateTo<TViewModel>() where TViewModel : BaseViewModel
+    {
+        var item = NavigationItems.FirstOrDefault(candidate =>
+            candidate.TargetViewModelType == typeof(TViewModel));
+        if (item is not null) Navigate(item);
+    }
+
     private void Navigate(object? parameter)
     {
         if (parameter is not NavigationItemViewModel item) return;
@@ -99,6 +108,7 @@ public sealed class MainWindowViewModel : BaseViewModel
             case var type when type == typeof(IncognitoViewModel): NavigationService.NavigateTo<IncognitoViewModel>(); break;
             case var type when type == typeof(TranslatorViewModel): NavigationService.NavigateTo<TranslatorViewModel>(); break;
             case var type when type == typeof(NotificationsViewModel): NavigationService.NavigateTo<NotificationsViewModel>(); break;
+            case var type when type == typeof(PomodoroViewModel): NavigationService.NavigateTo<PomodoroViewModel>(); break;
             default: return;
         }
 

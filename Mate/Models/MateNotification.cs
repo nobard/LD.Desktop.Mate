@@ -26,10 +26,22 @@ public sealed class MateNotification
 
     public MateNotificationKind Kind { get; init; }
 
+    public bool IsPersistent { get; init; }
+
+    public string? ActionId { get; init; }
+
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
+
+    [JsonIgnore]
+    public bool HasAction => !string.IsNullOrWhiteSpace(ActionId);
 
     [JsonIgnore]
     public string TimeText => CreatedAt.LocalDateTime.Date == DateTime.Today
         ? CreatedAt.LocalDateTime.ToString("HH:mm")
         : CreatedAt.LocalDateTime.ToString("dd.MM · HH:mm");
+}
+
+public static class MateNotificationActions
+{
+    public const string OpenPomodoro = "open-pomodoro";
 }
