@@ -17,6 +17,7 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
 {
     private readonly IFileShelfService _fileShelfService;
     private string _statusMessage = "Перетащите файлы в это окно";
+    private bool _isUpdatingSelection;
 
     public FolderViewModel(IFileShelfService fileShelfService)
     {
@@ -24,6 +25,7 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
         Files = new ObservableCollection<FileCardViewModel>();
 
         ToggleSelectionCommand = new DelegateCommand(ToggleSelection);
+        DeleteFileCommand = new DelegateCommand(DeleteFile);
         ClearSelectionCommand = new DelegateCommand(_ => ClearSelection(), _ => HasSelection);
         DeleteSelectedCommand = new DelegateCommand(_ => DeleteSelected(), _ => HasSelection);
         ClearFilesCommand = new DelegateCommand(_ => ClearFiles(), _ => !IsEmpty);
@@ -40,6 +42,8 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
 
     public DelegateCommand ToggleSelectionCommand { get; }
 
+    public DelegateCommand DeleteFileCommand { get; }
+
     public DelegateCommand ClearSelectionCommand { get; }
 
     public DelegateCommand DeleteSelectedCommand { get; }
@@ -52,7 +56,23 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
 
     public bool IsEmpty => Files.Count == 0;
 
+    public bool HasFiles => !IsEmpty;
+
     public bool HasSelection => Files.Any(file => file.IsSelected);
+
+    public bool IsAllSelected
+    {
+        get => HasFiles && Files.All(file => file.IsSelected);
+        set
+        {
+            if (!HasFiles || value == IsAllSelected) return;
+
+            _isUpdatingSelection = true;
+            foreach (var file in Files) file.IsSelected = value;
+            _isUpdatingSelection = false;
+            NotifyCollectionStateChanged();
+        }
+    }
 
     public string StatusMessage
     {
@@ -131,6 +151,20 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
         }
     }
 
+    private void DeleteFile(object? parameter)
+    {
+        if (parameter is not FileCardViewModel file) return;
+
+        try
+        {
+            _fileShelfService.DeleteFiles(new[] { file.FilePath });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = "Не удалось удалить файл";
+        }
+    }
+
     private void ClearFiles()
     {
         var paths = Files.Select(file => file.FilePath).ToArray();
@@ -146,7 +180,10 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
 
     private void File_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(FileCardViewModel.IsSelected)) NotifyCollectionStateChanged();
+        if (e.PropertyName == nameof(FileCardViewModel.IsSelected) && !_isUpdatingSelection)
+        {
+            NotifyCollectionStateChanged();
+        }
     }
 
     private void FileShelfService_FilesChanged()
@@ -165,7 +202,9 @@ public sealed class FolderViewModel : ToolViewModel, IDisposable
     {
         OnPropertyChanged(nameof(SelectionSummary));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
         ClearSelectionCommand.RaiseCanExecuteChanged();
         DeleteSelectedCommand.RaiseCanExecuteChanged();
         ClearFilesCommand.RaiseCanExecuteChanged();
