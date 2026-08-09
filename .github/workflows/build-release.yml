@@ -61,13 +61,21 @@ jobs:
           }
 
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          $installedVersion = (Get-Item -LiteralPath $iscc).VersionInfo.ProductVersion
-
-          if ($installedVersion -notlike '6.7.3*') {
-              throw "Expected Inno Setup 6.7.3, found $installedVersion."
+          if (-not (Test-Path -LiteralPath $iscc)) {
+              throw "Inno Setup compiler was not found at $iscc."
           }
 
-          Write-Host "Using Inno Setup $installedVersion"
+          $installedPackage = winget list `
+              --id JRSoftware.InnoSetup `
+              --exact `
+              --source winget | Out-String
+
+          if ($LASTEXITCODE -ne 0 -or $installedPackage -notmatch '\b6\.7\.3\b') {
+              throw "WinGet did not confirm Inno Setup 6.7.3:`n$installedPackage"
+          }
+
+          Write-Host $installedPackage.Trim()
+          Write-Host "Compiler: $iscc"
 
       - name: Build installer
         shell: pwsh
