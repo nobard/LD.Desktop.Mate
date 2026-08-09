@@ -104,6 +104,40 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="NotificationRemoveButton" TargetType="Button">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface"
+                                Width="18"
+                                Height="18"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonHover}" />
+                                <Setter Property="Foreground" Value="#D0D0D0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource Theme.ButtonPressed}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -172,32 +206,34 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Center">
                                     <Viewbox Width="15" Height="15">
-                                        <Path Data="M 5,15 L 19,15 M 7,15 L 7,10 C 7,6.7 9,5 12,5 C 15,5 17,6.7 17,10 L 17,15 M 10,18 C 10.5,19.2 11.1,20 12,20 C 12.9,20 13.5,19.2 14,18 M 12,3 L 12,5"
-                                              StrokeThickness="1.7"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              StrokeLineJoin="Round"
-                                              Fill="Transparent">
-                                            <Path.Style>
-                                                <Style TargetType="Path">
-                                                    <Setter Property="Stroke" Value="#8D8D8D" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Update}">
-                                                            <Setter Property="Stroke" Value="#66A9FF" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Success}">
-                                                            <Setter Property="Stroke" Value="#79C58A" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Warning}">
-                                                            <Setter Property="Stroke" Value="#D3AE67" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Error}">
-                                                            <Setter Property="Stroke" Value="#D67A7A" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Path.Style>
-                                        </Path>
+                                        <Canvas Width="24" Height="24">
+                                            <Path Data="M 5,16 L 19,16 M 7,16 L 7,10 C 7,6.7 9,5 12,5 C 15,5 17,6.7 17,10 L 17,16 M 10,19 C 10.5,20.2 11.1,21 12,21 C 12.9,21 13.5,20.2 14,19 M 12,3 L 12,5"
+                                                  StrokeThickness="1.7"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round"
+                                                  StrokeLineJoin="Round"
+                                                  Fill="Transparent">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <Setter Property="Stroke" Value="#8D8D8D" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Update}">
+                                                                <Setter Property="Stroke" Value="#66A9FF" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Success}">
+                                                                <Setter Property="Stroke" Value="#79C58A" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Warning}">
+                                                                <Setter Property="Stroke" Value="#D3AE67" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:MateNotificationKind.Error}">
+                                                                <Setter Property="Stroke" Value="#D67A7A" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
+                                        </Canvas>
                                     </Viewbox>
                                 </Border>
 
@@ -220,19 +256,44 @@
                                                VerticalAlignment="Center" />
                                 </Grid>
 
-                                <StackPanel Grid.Column="2"
-                                            Orientation="Horizontal"
+                                <Grid Grid.Column="2" MinWidth="76">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="17" />
+                                        <RowDefinition Height="17" />
+                                    </Grid.RowDefinitions>
+
+                                    <Button Style="{StaticResource NotificationRemoveButton}"
+                                            Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip="Удалить"
+                                            HorizontalAlignment="Right"
                                             VerticalAlignment="Top">
-                                    <TextBlock Text="{Binding Source}"
-                                               Foreground="#6F6F6F"
-                                               FontSize="10" />
-                                    <TextBlock Text=" · "
-                                               Foreground="#555555"
-                                               FontSize="10" />
-                                    <TextBlock Text="{Binding TimeText}"
-                                               Foreground="#6F6F6F"
-                                               FontSize="10" />
-                                </StackPanel>
+                                        <Viewbox Width="8" Height="8">
+                                            <Canvas Width="16" Height="16">
+                                                <Path Data="M 4,4 L 12,12 M 12,4 L 4,12"
+                                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.7"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round" />
+                                            </Canvas>
+                                        </Viewbox>
+                                    </Button>
+
+                                    <StackPanel Grid.Row="1"
+                                                Orientation="Horizontal"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom">
+                                        <TextBlock Text="{Binding Source}"
+                                                   Foreground="#6F6F6F"
+                                                   FontSize="10" />
+                                        <TextBlock Text=" · "
+                                                   Foreground="#555555"
+                                                   FontSize="10" />
+                                        <TextBlock Text="{Binding TimeText}"
+                                                   Foreground="#6F6F6F"
+                                                   FontSize="10" />
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
                         </Border>
                     </DataTemplate>

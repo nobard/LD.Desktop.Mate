@@ -15,12 +15,12 @@ public partial class NotificationPopupWindow : Window, IDisposable
     private const double DesignWidth = 360;
     private const double DesignHeight = 76;
     private const int GwlExStyle = -20;
-    private const int WsExTransparent = 0x00000020;
     private const int WsExToolWindow = 0x00000080;
     private const int WsExNoActivate = 0x08000000;
 
     private readonly Queue<MateNotification> _queue = new();
     private readonly CancellationTokenSource _cancellation = new();
+    private TaskCompletionSource<bool>? _dismissCompletion;
     private bool _isShowingNotification;
     private bool _disposed;
     private double _interfaceScale = 1;
@@ -82,14 +82,12 @@ public partial class NotificationPopupWindow : Window, IDisposable
             System.Windows.Media.TranslateTransform.YProperty,
             CreateAnimation(0, 420, openEase));
 
-        try
-        {
-            await Task.Delay(4200, _cancellation.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
+        _dismissCompletion = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var automaticDismiss = Task.Delay(4200, _cancellation.Token);
+        await Task.WhenAny(automaticDismiss, _dismissCompletion.Task);
+        _dismissCompletion = null;
+        if (_cancellation.IsCancellationRequested) return;
 
         var closeEase = new CubicEase { EasingMode = EasingMode.EaseIn };
         BeginAnimation(OpacityProperty, CreateAnimation(0, 320, closeEase));
@@ -122,6 +120,9 @@ public partial class NotificationPopupWindow : Window, IDisposable
         if (_queue.Count > 0) await ShowNextAsync();
     }
 
+    private void DismissButton_Click(object sender, RoutedEventArgs e) =>
+        _dismissCompletion?.TrySetResult(true);
+
     private void PositionAtTopCenter()
     {
         var workArea = SystemParameters.WorkArea;
@@ -133,7 +134,7 @@ public partial class NotificationPopupWindow : Window, IDisposable
     {
         var handle = new WindowInteropHelper(this).Handle;
         var currentStyle = GetWindowLongPtr(handle, GwlExStyle).ToInt64();
-        var newStyle = new IntPtr(currentStyle | WsExTransparent | WsExToolWindow | WsExNoActivate);
+        var newStyle = new IntPtr(currentStyle | WsExToolWindow | WsExNoActivate);
         SetWindowLongPtr(handle, GwlExStyle, newStyle);
     }
 
@@ -150,6 +151,8 @@ public partial class NotificationPopupWindow : Window, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _dismissCompletion?.TrySetResult(true);
+        _dismissCompletion = null;
         _cancellation.Cancel();
         _cancellation.Dispose();
         _queue.Clear();

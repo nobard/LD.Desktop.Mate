@@ -17,6 +17,7 @@ public sealed class NotificationsViewModel : ToolViewModel
         ClearCommand = new DelegateCommand(
             _ => _notificationCenterService.Clear(),
             _ => HasNotifications);
+        RemoveCommand = new DelegateCommand(RemoveNotification);
         _notificationCenterService.HistoryChanged += NotificationCenterService_HistoryChanged;
     }
 
@@ -28,6 +29,8 @@ public sealed class NotificationsViewModel : ToolViewModel
 
     public DelegateCommand ClearCommand { get; }
 
+    public DelegateCommand RemoveCommand { get; }
+
     public bool HasNotifications => Notifications.Count > 0;
 
     public bool IsEmpty => !HasNotifications;
@@ -35,6 +38,14 @@ public sealed class NotificationsViewModel : ToolViewModel
     public string SummaryText => HasNotifications
         ? $"Уведомлений: {Notifications.Count}"
         : "Здесь появятся уведомления Mate";
+
+    private void RemoveNotification(object? parameter)
+    {
+        if (parameter is MateNotification notification)
+        {
+            _notificationCenterService.Remove(notification.Id);
+        }
+    }
 
     private void NotificationCenterService_HistoryChanged(object? sender, EventArgs e)
     {

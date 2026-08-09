@@ -85,6 +85,16 @@ public sealed class NotificationCenterService : INotificationCenterService
         HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    public void Remove(Guid notificationId)
+    {
+        var notification = _notifications.FirstOrDefault(item => item.Id == notificationId);
+        if (notification is null) return;
+
+        _notifications.Remove(notification);
+        Save();
+        HistoryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     private IEnumerable<MateNotification> Load()
     {
         try

@@ -20,4 +20,6 @@ public interface INotificationCenterService
         bool showBanner = true);
 
     void Clear();
+
+    void Remove(Guid notificationId);
 }
