@@ -14,8 +14,11 @@ namespace Mate.Services.Implementations;
 public sealed class WindowsMediaSessionService : IMediaSessionService
 {
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private readonly SemaphoreSlim _sessionChangeLock = new(1, 1);
+    private readonly CancellationTokenSource _pollCancellation = new();
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
+    private Task? _pollTask;
     private string _title = string.Empty;
     private string _artist = string.Empty;
     private byte[]? _thumbnail;
@@ -32,6 +35,7 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
             _manager.CurrentSessionChanged += Manager_CurrentSessionChanged;
             _manager.SessionsChanged += Manager_SessionsChanged;
             await ChangeCurrentSessionAsync();
+            _pollTask = PollSessionsAsync(_pollCancellation.Token);
         }
         catch
         {
@@ -82,19 +86,23 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
     {
         if (string.IsNullOrWhiteSpace(sourceId) || _manager is null) return;
 
-        var session = _manager.GetSessions().FirstOrDefault(candidate =>
-            string.Equals(
-                candidate.SourceAppUserModelId,
-                sourceId,
-                StringComparison.OrdinalIgnoreCase));
-        if (session is null)
+        await _sessionChangeLock.WaitAsync();
+        try
         {
-            await ChangeCurrentSessionAsync();
-            return;
-        }
+            var session = _manager.GetSessions().FirstOrDefault(candidate =>
+                string.Equals(
+                    candidate.SourceAppUserModelId,
+                    sourceId,
+                    StringComparison.OrdinalIgnoreCase));
+            if (session is null) return;
 
-        _hasExplicitSourceSelection = true;
-        await SetActiveSessionAsync(session);
+            _hasExplicitSourceSelection = true;
+            await SetActiveSessionAsync(session);
+        }
+        finally
+        {
+            _sessionChangeLock.Release();
+        }
     }
 
     private async void Manager_CurrentSessionChanged(
@@ -107,26 +115,75 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
 
     private async Task ChangeCurrentSessionAsync()
     {
-        var manager = _manager;
-        if (manager is null)
+        await _sessionChangeLock.WaitAsync();
+        try
         {
-            await SetActiveSessionAsync(null);
-            return;
-        }
+            var manager = _manager;
+            if (manager is null)
+            {
+                await SetActiveSessionAsync(null);
+                return;
+            }
 
-        GlobalSystemMediaTransportControlsSession? nextSession = null;
-        if (_hasExplicitSourceSelection && _session is not null)
+            var sessions = manager.GetSessions();
+            GlobalSystemMediaTransportControlsSession? nextSession = null;
+            if (_hasExplicitSourceSelection && _session is not null)
+            {
+                nextSession = sessions.FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.SourceAppUserModelId,
+                        _session.SourceAppUserModelId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (nextSession is null) _hasExplicitSourceSelection = false;
+            }
+
+            if (nextSession is null)
+            {
+                var systemSession = manager.GetCurrentSession();
+                nextSession = systemSession is not null && IsPlaying(systemSession)
+                    ? systemSession
+                    : sessions.FirstOrDefault(IsPlaying) ?? systemSession ?? sessions.FirstOrDefault();
+            }
+
+            await SetActiveSessionAsync(nextSession);
+        }
+        finally
         {
-            nextSession = manager.GetSessions().FirstOrDefault(candidate =>
-                string.Equals(
-                    candidate.SourceAppUserModelId,
-                    _session.SourceAppUserModelId,
-                    StringComparison.OrdinalIgnoreCase));
-            if (nextSession is null) _hasExplicitSourceSelection = false;
+            _sessionChangeLock.Release();
         }
+    }
 
-        nextSession ??= manager.GetCurrentSession();
-        await SetActiveSessionAsync(nextSession);
+    private async Task PollSessionsAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                await ChangeCurrentSessionAsync();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch
+            {
+                // Some browsers publish their system media session with a delay.
+            }
+        }
+    }
+
+    private static bool IsPlaying(GlobalSystemMediaTransportControlsSession session)
+    {
+        try
+        {
+            return session.GetPlaybackInfo().PlaybackStatus ==
+                   GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task SetActiveSessionAsync(GlobalSystemMediaTransportControlsSession? session)
@@ -193,10 +250,21 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
 
             if (refreshMediaProperties)
             {
-                var media = await session.TryGetMediaPropertiesAsync();
-                _title = string.IsNullOrWhiteSpace(media.Title) ? "Без названия" : media.Title;
-                _artist = FirstNotEmpty(media.Artist, media.AlbumArtist, media.Subtitle);
-                _thumbnail = await ReadThumbnailAsync(media.Thumbnail);
+                try
+                {
+                    var media = await session.TryGetMediaPropertiesAsync();
+                    _title = string.IsNullOrWhiteSpace(media.Title) ? "Без названия" : media.Title;
+                    _artist = FirstNotEmpty(media.Artist, media.AlbumArtist, media.Subtitle);
+                    _thumbnail = await ReadThumbnailAsync(media.Thumbnail);
+                }
+                catch
+                {
+                    _title = string.IsNullOrWhiteSpace(_title)
+                        ? GetFriendlySourceName(session.SourceAppUserModelId)
+                        : _title;
+                    _artist = string.Empty;
+                    _thumbnail = null;
+                }
             }
 
             if (!ReferenceEquals(session, _session)) return;
@@ -235,7 +303,11 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
         }
         catch
         {
-            SessionChanged?.Invoke(MediaSessionSnapshot.Empty);
+            SessionChanged?.Invoke(MediaSessionSnapshot.Empty with
+            {
+                Sources = GetAvailableSources(),
+                SelectedSourceId = _session?.SourceAppUserModelId
+            });
         }
         finally
         {
@@ -247,16 +319,23 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
     {
         if (thumbnail is null) return null;
 
-        using var stream = await thumbnail.OpenReadAsync();
-        if (stream.Size == 0 || stream.Size > 10 * 1024 * 1024) return null;
+        try
+        {
+            using var stream = await thumbnail.OpenReadAsync();
+            if (stream.Size == 0 || stream.Size > 10 * 1024 * 1024) return null;
 
-        var size = (uint)stream.Size;
-        using var input = stream.GetInputStreamAt(0);
-        using var reader = new DataReader(input);
-        await reader.LoadAsync(size);
-        var bytes = new byte[(int)size];
-        reader.ReadBytes(bytes);
-        return bytes;
+            var size = (uint)stream.Size;
+            using var input = stream.GetInputStreamAt(0);
+            using var reader = new DataReader(input);
+            await reader.LoadAsync(size);
+            var bytes = new byte[(int)size];
+            reader.ReadBytes(bytes);
+            return bytes;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string FirstNotEmpty(params string?[] values)
@@ -288,12 +367,14 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
 
     private static string GetFriendlySourceName(string sourceAppId)
     {
+        if (sourceAppId.Contains("yandex", StringComparison.OrdinalIgnoreCase)) return "Yandex Browser";
         if (sourceAppId.Contains("chrome", StringComparison.OrdinalIgnoreCase)) return "Google Chrome";
         if (sourceAppId.Contains("msedge", StringComparison.OrdinalIgnoreCase)) return "Microsoft Edge";
         if (sourceAppId.Contains("spotify", StringComparison.OrdinalIgnoreCase)) return "Spotify";
         if (sourceAppId.Contains("firefox", StringComparison.OrdinalIgnoreCase)) return "Mozilla Firefox";
 
         var fileName = Path.GetFileNameWithoutExtension(sourceAppId);
+        if (string.Equals(fileName, "browser", StringComparison.OrdinalIgnoreCase)) return "Yandex Browser";
         return string.IsNullOrWhiteSpace(fileName) ? sourceAppId : fileName;
     }
 
@@ -302,6 +383,8 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
         if (_disposed) return;
         _disposed = true;
 
+        _pollCancellation.Cancel();
+
         DetachSessionEvents();
         if (_manager is not null)
         {
@@ -309,6 +392,6 @@ public sealed class WindowsMediaSessionService : IMediaSessionService
             _manager.SessionsChanged -= Manager_SessionsChanged;
         }
 
-        _refreshLock.Dispose();
+        _pollTask = null;
     }
 }
