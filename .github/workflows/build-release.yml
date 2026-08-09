@@ -42,6 +42,33 @@ jobs:
               throw 'Version must use the Major.Minor.Patch format, for example 1.2.0.'
           }
 
+      - name: Install Inno Setup 6.7.3
+        shell: pwsh
+        run: |
+          winget install `
+              --id JRSoftware.InnoSetup `
+              --exact `
+              --version 6.7.3 `
+              --source winget `
+              --silent `
+              --force `
+              --accept-package-agreements `
+              --accept-source-agreements `
+              --disable-interactivity
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "Inno Setup installation failed with exit code $LASTEXITCODE."
+          }
+
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $installedVersion = (Get-Item -LiteralPath $iscc).VersionInfo.ProductVersion
+
+          if ($installedVersion -notlike '6.7.3*') {
+              throw "Expected Inno Setup 6.7.3, found $installedVersion."
+          }
+
+          Write-Host "Using Inno Setup $installedVersion"
+
       - name: Build installer
         shell: pwsh
         run: .\build-installer.ps1 -Version $env:RELEASE_VERSION
