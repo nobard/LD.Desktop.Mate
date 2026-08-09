@@ -23,7 +23,8 @@ public sealed class MainWindowViewModel : BaseViewModel
             new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
             new("⚑", "Заготовки", typeof(SnippetsViewModel)),
             new("◉", "Инкогнито", typeof(IncognitoViewModel)),
-            new("文", "Переводчик", typeof(TranslatorViewModel))
+            new("文", "Переводчик", typeof(TranslatorViewModel)),
+            new("●", "Уведомления", typeof(NotificationsViewModel))
         };
         NavigateCommand = new DelegateCommand(Navigate);
         OpenUpdateCommand = new DelegateCommand(
@@ -97,6 +98,7 @@ public sealed class MainWindowViewModel : BaseViewModel
             case var type when type == typeof(SnippetsViewModel): NavigationService.NavigateTo<SnippetsViewModel>(); break;
             case var type when type == typeof(IncognitoViewModel): NavigationService.NavigateTo<IncognitoViewModel>(); break;
             case var type when type == typeof(TranslatorViewModel): NavigationService.NavigateTo<TranslatorViewModel>(); break;
+            case var type when type == typeof(NotificationsViewModel): NavigationService.NavigateTo<NotificationsViewModel>(); break;
             default: return;
         }
 

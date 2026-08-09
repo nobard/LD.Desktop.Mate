@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Mate.Models;
 using Mate.Services.Interfaces;
 using Forms = System.Windows.Forms;
 
@@ -9,6 +10,7 @@ public sealed class TrayService : ITrayService
 {
     private readonly IThemeService _themeService;
     private readonly IAutoStartService _autoStartService;
+    private readonly INotificationCenterService _notificationCenterService;
     private readonly Dictionary<AppTheme, Forms.ToolStripMenuItem> _themeItems = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _menu;
@@ -19,10 +21,14 @@ public sealed class TrayService : ITrayService
     private System.Drawing.Icon? _trayIcon;
     private System.Drawing.Icon? _updateTrayIcon;
 
-    public TrayService(IThemeService themeService, IAutoStartService autoStartService)
+    public TrayService(
+        IThemeService themeService,
+        IAutoStartService autoStartService,
+        INotificationCenterService notificationCenterService)
     {
         _themeService = themeService;
         _autoStartService = autoStartService;
+        _notificationCenterService = notificationCenterService;
         _themeService.ThemeChanged += ThemeService_ThemeChanged;
     }
 
@@ -165,11 +171,10 @@ public sealed class TrayService : ITrayService
         }
 
         _autoStartItem.Checked = _autoStartService.IsEnabled;
-        _notifyIcon?.ShowBalloonTip(
-            3000,
-            "Mate",
+        _notificationCenterService.Publish(
+            "Автозапуск",
             "Не удалось изменить настройку автозапуска.",
-            Forms.ToolTipIcon.Warning);
+            MateNotificationKind.Error);
     }
 
     private void UpdateThemeChecks()

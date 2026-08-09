@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Mate.MVVM.ViewModels;
@@ -18,11 +19,21 @@ public partial class MainWindow : Window
     private const double ReferenceScreenHeight = 1728;
     private const double MinimumInterfaceScale = 0.5;
     private const double InterfaceScaleMultiplier = 1.2;
+    private const double NavigationScrollStep = 42;
+
+    private static readonly DependencyProperty NavigationScrollOffsetProperty =
+        DependencyProperty.Register(
+            nameof(NavigationScrollOffset),
+            typeof(double),
+            typeof(MainWindow),
+            new PropertyMetadata(0d, NavigationScrollOffsetChanged));
 
     private readonly DispatcherTimer _folderHoverTimer;
     private NavigationItemViewModel? _folderHoverItem;
     private int _animationVersion;
     private bool _closeCanBeCancelled;
+    private bool? _navigationFadeTop;
+    private bool? _navigationFadeBottom;
 
     public MainWindow()
     {
@@ -39,6 +50,12 @@ public partial class MainWindow : Window
     public bool IsClosingAnimation { get; private set; }
 
     public double InterfaceScale { get; private set; } = 1;
+
+    private double NavigationScrollOffset
+    {
+        get => (double)GetValue(NavigationScrollOffsetProperty);
+        set => SetValue(NavigationScrollOffsetProperty, value);
+    }
 
     public void ApplyScreenScale()
     {
@@ -159,6 +176,112 @@ public partial class MainWindow : Window
         if (AllowClose) return;
         e.Cancel = true;
         HideAnimated();
+    }
+
+    private static void NavigationScrollOffsetChanged(
+        DependencyObject dependencyObject,
+        DependencyPropertyChangedEventArgs eventArgs)
+    {
+        if (dependencyObject is not MainWindow window) return;
+        window.NavigationScrollViewer?.ScrollToVerticalOffset((double)eventArgs.NewValue);
+    }
+
+    private void NavigationScrollUp_Click(object sender, RoutedEventArgs e) =>
+        ScrollNavigation(-1);
+
+    private void NavigationScrollDown_Click(object sender, RoutedEventArgs e) =>
+        ScrollNavigation(1);
+
+    private void NavigationScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Delta == 0) return;
+
+        var direction = e.Delta < 0 ? 1 : -1;
+        if (direction < 0 && !NavigationUpButton.IsEnabled) return;
+        if (direction > 0 && !NavigationDownButton.IsEnabled) return;
+
+        ScrollNavigation(direction);
+        e.Handled = true;
+    }
+
+    private void NavigationScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) =>
+        UpdateNavigationScrollState();
+
+    private void ScrollNavigation(int direction)
+    {
+        var currentOffset = NavigationScrollViewer.VerticalOffset;
+        var maximumOffset = NavigationScrollViewer.ScrollableHeight;
+        if (maximumOffset <= 0) return;
+
+        var targetOffset = System.Math.Clamp(
+            currentOffset + direction * NavigationScrollStep,
+            0,
+            maximumOffset);
+        if (direction > 0 && maximumOffset - targetOffset < NavigationScrollStep / 2)
+        {
+            targetOffset = maximumOffset;
+        }
+        else if (direction < 0 && targetOffset < NavigationScrollStep / 2)
+        {
+            targetOffset = 0;
+        }
+
+        BeginAnimation(NavigationScrollOffsetProperty, null);
+        NavigationScrollOffset = currentOffset;
+
+        var animation = new DoubleAnimation(
+            currentOffset,
+            targetOffset,
+            System.TimeSpan.FromMilliseconds(180))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            FillBehavior = FillBehavior.HoldEnd
+        };
+        animation.Completed += (_, _) =>
+        {
+            BeginAnimation(NavigationScrollOffsetProperty, null);
+            NavigationScrollOffset = targetOffset;
+        };
+
+        BeginAnimation(
+            NavigationScrollOffsetProperty,
+            animation,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void UpdateNavigationScrollState()
+    {
+        var canScrollUp = NavigationScrollViewer.VerticalOffset > 0.5;
+        var canScrollDown = NavigationScrollViewer.VerticalOffset
+                            < NavigationScrollViewer.ScrollableHeight - 0.5;
+
+        NavigationUpButton.IsEnabled = canScrollUp;
+        NavigationDownButton.IsEnabled = canScrollDown;
+
+        if (_navigationFadeTop == canScrollUp
+            && _navigationFadeBottom == canScrollDown)
+        {
+            return;
+        }
+
+        _navigationFadeTop = canScrollUp;
+        _navigationFadeBottom = canScrollDown;
+
+        var transparent = Color.FromArgb(0, 0, 0, 0);
+        var mask = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, 1),
+            GradientStops = new GradientStopCollection
+            {
+                new(canScrollUp ? transparent : Colors.Black, 0),
+                new(Colors.Black, 0.055),
+                new(Colors.Black, 0.945),
+                new(canScrollDown ? transparent : Colors.Black, 1)
+            }
+        };
+        mask.Freeze();
+        NavigationViewport.OpacityMask = mask;
     }
 
     private void NavigationButton_DragEnter(object sender, DragEventArgs e)

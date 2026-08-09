@@ -11,7 +11,7 @@
         <Style x:Key="NavigationButton" TargetType="Button">
             <Setter Property="Width" Value="40" />
             <Setter Property="Height" Value="40" />
-            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Margin" Value="0,1" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Foreground" Value="#929292" />
             <Setter Property="Background" Value="Transparent" />
@@ -28,6 +28,46 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="NavigationBackground" Property="Background" Value="{DynamicResource Theme.NavigationHover}" /><Setter Property="Foreground" Value="#F0F0F0" /></Trigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="NavigationBackground" Property="Background" Value="{DynamicResource Theme.SelectedBackground}" /><Setter Property="Foreground" Value="#FFFFFF" /></DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NavigationScrollButton" TargetType="Button">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Foreground" Value="#777777" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ArrowSurface"
+                                Width="18"
+                                Height="18"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ArrowSurface" Property="Background" Value="{DynamicResource Theme.NavigationHover}" />
+                                <Setter Property="Foreground" Value="#D0D0D0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Visibility" Value="Hidden" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -250,7 +290,61 @@
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
-            <ItemsControl Grid.Row="1" Grid.Column="0" ItemsSource="{Binding NavigationItems}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0">
+            <Grid Grid.Row="1"
+                  Grid.Column="0"
+                  Width="48"
+                  Height="280"
+                  Margin="0,5"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="18" />
+                    <RowDefinition Height="244" />
+                    <RowDefinition Height="18" />
+                </Grid.RowDefinitions>
+
+                <Button x:Name="NavigationUpButton"
+                        Grid.Row="0"
+                        Style="{StaticResource NavigationScrollButton}"
+                        ToolTip="Прокрутить вверх"
+                        Click="NavigationScrollUp_Click">
+                    <Viewbox Width="10" Height="6">
+                        <Grid Width="10" Height="6">
+                            <Path Data="M 1,5 L 5,1"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" />
+                            <Path Data="M 9,5 L 5,1"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" />
+                        </Grid>
+                    </Viewbox>
+                </Button>
+
+                <Border x:Name="NavigationViewport"
+                        Grid.Row="1"
+                        ClipToBounds="True">
+                    <Border.OpacityMask>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="Black" Offset="0" />
+                            <GradientStop Color="Black" Offset="0.055" />
+                            <GradientStop Color="Black" Offset="0.945" />
+                            <GradientStop Color="Transparent" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.OpacityMask>
+                    <ScrollViewer x:Name="NavigationScrollViewer"
+                                  VerticalScrollBarVisibility="Hidden"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  CanContentScroll="False"
+                                  Focusable="False"
+                                  PanningMode="VerticalOnly"
+                                  ScrollChanged="NavigationScrollViewer_ScrollChanged"
+                                  PreviewMouseWheel="NavigationScrollViewer_PreviewMouseWheel">
+                        <ItemsControl ItemsSource="{Binding NavigationItems}"
+                                      HorizontalAlignment="Center">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type viewModels:NavigationItemViewModel}">
                             <Button Style="{StaticResource NavigationButton}"
@@ -288,6 +382,21 @@
                                               StrokeEndLineCap="Round"
                                               Fill="Transparent" />
                                     </Canvas>
+                                    <Canvas x:Name="NotificationsIcon" Width="24" Height="24" Visibility="Collapsed">
+                                        <Path Data="M 5,17 L 7,15 L 7,10 C 7,6.8 9,5 12,5 C 15,5 17,6.8 17,10 L 17,15 L 19,17 Z"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Fill="Transparent" />
+                                        <Path Data="M 10,20 C 10.7,21.2 13.3,21.2 14,20"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Fill="Transparent" />
+                                    </Canvas>
                                     <Canvas x:Name="TranslateIcon" Width="24" Height="24" Visibility="Collapsed"><TextBlock Canvas.Left="1" Canvas.Top="0" Text="A" FontSize="18" FontWeight="SemiBold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /><TextBlock Canvas.Left="11" Canvas.Top="7" Text="文" FontSize="13" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /></Canvas>
                                 </Grid>
                             </Button>
@@ -298,10 +407,35 @@
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Заготовки"><Setter TargetName="PinIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Инкогнито"><Setter TargetName="IncognitoIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Переводчик"><Setter TargetName="TranslateIcon" Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ToolTip}" Value="Уведомления"><Setter TargetName="NotificationsIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <Button x:Name="NavigationDownButton"
+                        Grid.Row="2"
+                        Style="{StaticResource NavigationScrollButton}"
+                        ToolTip="Прокрутить вниз"
+                        Click="NavigationScrollDown_Click">
+                    <Viewbox Width="10" Height="6">
+                        <Grid Width="10" Height="6">
+                            <Path Data="M 1,1 L 5,5"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" />
+                            <Path Data="M 9,1 L 5,5"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" />
+                        </Grid>
+                    </Viewbox>
+                </Button>
+            </Grid>
             <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource Theme.Divider}" Margin="0,14" />
             <ContentControl Grid.Row="1" Grid.Column="2" Content="{Binding NavigationService.CurrentView}" />
         </Grid>

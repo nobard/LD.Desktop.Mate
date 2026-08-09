@@ -24,6 +24,7 @@ public static class AutofacConfig
         builder.RegisterType<ThemeService>().As<IThemeService>().SingleInstance();
         builder.RegisterType<WindowsAutoStartService>().As<IAutoStartService>().SingleInstance();
         builder.RegisterType<VelopackUpdateService>().As<IUpdateService>().SingleInstance();
+        builder.RegisterType<NotificationCenterService>().As<INotificationCenterService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {
@@ -38,6 +39,7 @@ public static class AutofacConfig
         builder.RegisterType<SnippetsViewModel>().SingleInstance();
         builder.RegisterType<IncognitoViewModel>().SingleInstance();
         builder.RegisterType<TranslatorViewModel>().SingleInstance();
+        builder.RegisterType<NotificationsViewModel>().SingleInstance();
 
         builder.Register(context => new MainWindow
         {

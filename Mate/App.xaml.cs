@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Autofac;
+using Mate.Models;
 using Mate.MVVM.ViewModels;
 using Mate.MVVM.Views;
 using Mate.Services.DI;
@@ -18,9 +19,11 @@ public partial class App : Application
     private IContainer? _container;
     private ITrayService? _trayService;
     private IUpdateService? _updateService;
+    private INotificationCenterService? _notificationCenterService;
     private MainWindow? _mainWindow;
     private MainWindowViewModel? _mainWindowViewModel;
     private HotZoneWindow? _hotZoneWindow;
+    private NotificationPopupWindow? _notificationPopupWindow;
     private DispatcherTimer? _pointerTimer;
     private DispatcherTimer? _updateTimer;
     private CancellationTokenSource? _updateCancellation;
@@ -59,6 +62,11 @@ public partial class App : Application
         _hotZoneWindow.ApplyScale(_mainWindow.InterfaceScale);
         _hotZoneWindow.PositionAtTopCenter();
         _hotZoneWindow.Show();
+
+        _notificationCenterService = _container.Resolve<INotificationCenterService>();
+        _notificationPopupWindow = new NotificationPopupWindow();
+        _notificationPopupWindow.ApplyScale(_mainWindow.InterfaceScale);
+        _notificationCenterService.NotificationReceived += NotificationCenterService_NotificationReceived;
 
         _trayService = _container.Resolve<ITrayService>();
         _updateService = _container.Resolve<IUpdateService>();
@@ -105,6 +113,11 @@ public partial class App : Application
                     _ = DownloadAndInstallUpdateAsync(versionText);
                 _mainWindowViewModel?.ShowUpdateAvailable(versionText, installUpdate);
                 _trayService?.ShowUpdateAvailable(versionText, installUpdate);
+                _notificationCenterService?.Publish(
+                    "Доступно обновление",
+                    $"Версия {versionText} готова к установке.",
+                    MateNotificationKind.Update,
+                    key: $"update:{versionText}");
                 return;
             }
 
@@ -124,6 +137,10 @@ public partial class App : Application
             if (showResult)
             {
                 _trayService?.ShowUpdateCheckMessage("Ошибка проверки обновлений");
+                _notificationCenterService?.Publish(
+                    "Ошибка проверки обновлений",
+                    "Не удалось связаться с сервером. Попробуйте ещё раз позже.",
+                    MateNotificationKind.Error);
             }
         }
         finally
@@ -159,6 +176,10 @@ public partial class App : Application
                 _ = DownloadAndInstallUpdateAsync(versionText);
             _mainWindowViewModel?.ShowUpdateAvailable(versionText, retryUpdate);
             _trayService?.ShowUpdateAvailable(versionText, retryUpdate);
+            _notificationCenterService?.Publish(
+                "Не удалось обновить Mate",
+                $"Версия {versionText} не установлена. Повторите попытку.",
+                MateNotificationKind.Error);
         }
         finally
         {
@@ -251,6 +272,22 @@ public partial class App : Application
         if (now - _pointerLeftAtUtc >= HideDelay) HidePanel();
     }
 
+    private void NotificationCenterService_NotificationReceived(
+        object? sender,
+        MateNotification notification)
+    {
+        if (_notificationPopupWindow is null) return;
+
+        if (Dispatcher.CheckAccess())
+        {
+            _notificationPopupWindow.ShowNotification(notification);
+            return;
+        }
+
+        Dispatcher.BeginInvoke(
+            new Action(() => _notificationPopupWindow?.ShowNotification(notification)));
+    }
+
     private bool IsPointerInsidePanel(System.Drawing.Point pointer)
     {
         if (_mainWindow is null || !_mainWindow.IsVisible) return false;
@@ -324,6 +361,14 @@ public partial class App : Application
             _pointerTimer.Tick -= PointerTimer_Tick;
             _pointerTimer = null;
         }
+
+        if (_notificationCenterService is not null)
+        {
+            _notificationCenterService.NotificationReceived -= NotificationCenterService_NotificationReceived;
+        }
+        _notificationPopupWindow?.Dispose();
+        _notificationPopupWindow = null;
+        _notificationCenterService = null;
 
         _trayService?.Dispose();
         _hotZoneWindow?.Close();

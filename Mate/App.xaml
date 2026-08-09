@@ -22,6 +22,7 @@
             <DataTemplate DataType="{x:Type vms:SnippetsViewModel}"><views:SnippetsView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:IncognitoViewModel}"><views:IncognitoView /></DataTemplate>
             <DataTemplate DataType="{x:Type vms:TranslatorViewModel}"><views:TranslatorView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vms:NotificationsViewModel}"><views:NotificationsView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
