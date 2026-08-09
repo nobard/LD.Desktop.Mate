@@ -1,16 +1,11 @@
-using System;
-
 namespace Mate.Models;
 
 public sealed record UpdateCheckResult(
-    Version CurrentVersion,
-    Version? LatestVersion,
-    Uri? ReleasePageUri,
-    Uri? InstallerDownloadUri)
+    string CurrentVersion,
+    string? LatestVersion,
+    bool CanCheckForUpdates)
 {
-    public bool HasPublishedRelease => LatestVersion is not null;
+    public bool HasPublishedRelease => CanCheckForUpdates;
 
-    public bool IsUpdateAvailable => LatestVersion is not null
-                                     && LatestVersion > CurrentVersion
-                                     && InstallerDownloadUri is not null;
+    public bool IsUpdateAvailable => LatestVersion is not null;
 }

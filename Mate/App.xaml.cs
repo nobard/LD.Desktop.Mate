@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +8,7 @@ using Mate.MVVM.ViewModels;
 using Mate.MVVM.Views;
 using Mate.Services.DI;
 using Mate.Services.Interfaces;
+using Velopack;
 using Forms = System.Windows.Forms;
 
 namespace Mate;
@@ -32,6 +32,18 @@ public partial class App : Application
 
     private static readonly TimeSpan InitialPointerGracePeriod = TimeSpan.FromMilliseconds(1500);
     private static readonly TimeSpan HideDelay = TimeSpan.FromMilliseconds(220);
+
+    [STAThread]
+    private static void Main(string[] args)
+    {
+        VelopackApp.Build()
+            .SetArgs(args)
+            .Run();
+
+        var app = new App();
+        app.InitializeComponent();
+        app.Run();
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -86,15 +98,11 @@ public partial class App : Application
         try
         {
             var result = await _updateService.CheckForUpdateAsync(cancellationToken);
-            if (result.IsUpdateAvailable
-                && result.LatestVersion is not null
-                && result.InstallerDownloadUri is not null)
+            if (result.IsUpdateAvailable && result.LatestVersion is not null)
             {
-                var latestVersion = result.LatestVersion;
-                var installerDownloadUri = result.InstallerDownloadUri;
-                var versionText = FormatVersion(latestVersion);
+                var versionText = result.LatestVersion;
                 Action installUpdate = () =>
-                    _ = DownloadAndInstallUpdateAsync(installerDownloadUri, latestVersion);
+                    _ = DownloadAndInstallUpdateAsync(versionText);
                 _mainWindowViewModel?.ShowUpdateAvailable(versionText, installUpdate);
                 _trayService?.ShowUpdateAvailable(versionText, installUpdate);
                 return;
@@ -102,13 +110,9 @@ public partial class App : Application
 
             _mainWindowViewModel?.ClearUpdate();
             if (!showResult) return;
-            var message = result.LatestVersion is not null
-                          && result.LatestVersion > result.CurrentVersion
-                          && result.InstallerDownloadUri is null
-                ? "В релизе не найден установщик"
-                : result.HasPublishedRelease
-                    ? $"Последняя версия: {FormatVersion(result.CurrentVersion)}"
-                    : "Релизы ещё не опубликованы";
+            var message = result.HasPublishedRelease
+                ? $"Последняя версия: {result.CurrentVersion}"
+                : "Проверка обновлений доступна после установки";
             _trayService?.ShowUpdateCheckMessage(message);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -129,9 +133,7 @@ public partial class App : Application
         }
     }
 
-    private async Task DownloadAndInstallUpdateAsync(
-        Uri installerDownloadUri,
-        Version version)
+    private async Task DownloadAndInstallUpdateAsync(string versionText)
     {
         if (_isInstallingUpdate || _updateService is null || _updateCancellation is null) return;
 
@@ -142,21 +144,8 @@ public partial class App : Application
 
         try
         {
-            var installerPath = await _updateService.DownloadInstallerAsync(
-                installerDownloadUri,
-                version,
-                cancellationToken);
-            var process = Process.Start(new ProcessStartInfo(installerPath)
-            {
-                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS",
-                UseShellExecute = true
-            });
-
-            if (process is null)
-            {
-                throw new InvalidOperationException("The update installer could not be started.");
-            }
-
+            await _updateService.DownloadUpdateAsync(cancellationToken);
+            _updateService.ApplyUpdateAndRestart();
             ExitApplication();
             return;
         }
@@ -166,9 +155,8 @@ public partial class App : Application
         }
         catch
         {
-            var versionText = FormatVersion(version);
             Action retryUpdate = () =>
-                _ = DownloadAndInstallUpdateAsync(installerDownloadUri, version);
+                _ = DownloadAndInstallUpdateAsync(versionText);
             _mainWindowViewModel?.ShowUpdateAvailable(versionText, retryUpdate);
             _trayService?.ShowUpdateAvailable(versionText, retryUpdate);
         }
@@ -176,12 +164,6 @@ public partial class App : Application
         {
             _isInstallingUpdate = false;
         }
-    }
-
-    private static string FormatVersion(Version version)
-    {
-        var build = version.Build >= 0 ? version.Build : 0;
-        return $"{version.Major}.{version.Minor}.{build}";
     }
 
     private void TogglePanel()
