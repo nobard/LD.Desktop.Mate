@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Mate.Models;
@@ -9,8 +8,7 @@ public interface IUpdateService
 {
     Task<UpdateCheckResult> CheckForUpdateAsync(CancellationToken cancellationToken = default);
 
-    Task<string> DownloadInstallerAsync(
-        Uri installerDownloadUri,
-        Version version,
-        CancellationToken cancellationToken = default);
+    Task DownloadUpdateAsync(CancellationToken cancellationToken = default);
+
+    void ApplyUpdateAndRestart();
 }

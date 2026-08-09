@@ -11,7 +11,13 @@
     <Product>Mate</Product>
     <Company>LD Desktop</Company>
     <RepositoryUrl>https://github.com/nobard/LD.Desktop.Mate</RepositoryUrl>
+    <StartupObject>Mate.App</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\MateTray.ico" />
@@ -20,5 +26,6 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.3.0" />
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 </Project>
