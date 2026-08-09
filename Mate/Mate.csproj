@@ -10,10 +10,12 @@
     <Version>1.0.0</Version>
     <Product>Mate</Product>
     <Company>LD Desktop</Company>
+    <RepositoryUrl>https://github.com/nobard/LD.Desktop.Mate</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="Assets\MateTray.ico" />
+    <Resource Include="Assets\MateTrayUpdate.ico" />
   </ItemGroup>
 
   <ItemGroup>

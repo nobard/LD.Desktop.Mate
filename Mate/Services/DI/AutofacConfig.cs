@@ -23,6 +23,7 @@ public static class AutofacConfig
         builder.RegisterType<PrivateBrowserService>().As<IPrivateBrowserService>().SingleInstance();
         builder.RegisterType<ThemeService>().As<IThemeService>().SingleInstance();
         builder.RegisterType<WindowsAutoStartService>().As<IAutoStartService>().SingleInstance();
+        builder.RegisterType<GitHubUpdateService>().As<IUpdateService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {

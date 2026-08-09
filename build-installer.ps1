@@ -13,6 +13,10 @@ $publishDirectory = Join-Path $projectRoot 'artifacts\publish'
 $installerScript = Join-Path $projectRoot 'installer\Mate.iss'
 $installerDirectory = Join-Path $projectRoot 'artifacts\installer'
 
+if (Test-Path -LiteralPath $publishDirectory) {
+    Remove-Item -LiteralPath $publishDirectory -Recurse -Force
+}
+
 New-Item -ItemType Directory -Path $publishDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $installerDirectory -Force | Out-Null
 
@@ -20,7 +24,7 @@ Write-Host "Publishing Mate $Version..."
 & dotnet publish $projectPath `
     --configuration Release `
     --runtime win-x64 `
-    --self-contained true `
+    --self-contained false `
     --output $publishDirectory `
     -p:PublishProfile=$publishProfile `
     -p:Version=$Version

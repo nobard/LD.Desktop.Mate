@@ -1,7 +1,11 @@
 using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Autofac;
+using Mate.MVVM.ViewModels;
 using Mate.MVVM.Views;
 using Mate.Services.DI;
 using Mate.Services.Interfaces;
@@ -13,12 +17,18 @@ public partial class App : Application
 {
     private IContainer? _container;
     private ITrayService? _trayService;
+    private IUpdateService? _updateService;
     private MainWindow? _mainWindow;
+    private MainWindowViewModel? _mainWindowViewModel;
     private HotZoneWindow? _hotZoneWindow;
     private DispatcherTimer? _pointerTimer;
+    private DispatcherTimer? _updateTimer;
+    private CancellationTokenSource? _updateCancellation;
     private DateTime _panelShownAtUtc;
     private DateTime? _pointerLeftAtUtc;
     private bool _pointerEnteredPanel;
+    private bool _isCheckingForUpdates;
+    private bool _isInstallingUpdate;
 
     private static readonly TimeSpan InitialPointerGracePeriod = TimeSpan.FromMilliseconds(1500);
     private static readonly TimeSpan HideDelay = TimeSpan.FromMilliseconds(220);
@@ -29,6 +39,7 @@ public partial class App : Application
 
         _container = AutofacConfig.GetConfiguredContainer();
         _mainWindow = _container.Resolve<MainWindow>();
+        _mainWindowViewModel = _mainWindow.DataContext as MainWindowViewModel;
         _mainWindow.ApplyScreenScale();
         MainWindow = _mainWindow;
 
@@ -38,9 +49,20 @@ public partial class App : Application
         _hotZoneWindow.Show();
 
         _trayService = _container.Resolve<ITrayService>();
+        _updateService = _container.Resolve<IUpdateService>();
+        _updateCancellation = new CancellationTokenSource();
         _trayService.Initialize(
             () => Dispatcher.Invoke(TogglePanel),
+            () => Dispatcher.Invoke(() => _ = CheckForUpdatesAsync(showResult: true)),
             () => Dispatcher.Invoke(ExitApplication));
+
+        _updateTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromHours(6)
+        };
+        _updateTimer.Tick += UpdateTimer_Tick;
+        _updateTimer.Start();
+        _ = CheckForUpdatesAsync(showResult: false);
 
         _pointerTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -48,6 +70,118 @@ public partial class App : Application
         };
         _pointerTimer.Tick += PointerTimer_Tick;
         _pointerTimer.Start();
+    }
+
+    private void UpdateTimer_Tick(object? sender, EventArgs e) =>
+        _ = CheckForUpdatesAsync(showResult: false);
+
+    private async Task CheckForUpdatesAsync(bool showResult)
+    {
+        if (_isCheckingForUpdates || _updateService is null || _updateCancellation is null) return;
+
+        var cancellationToken = _updateCancellation.Token;
+        _isCheckingForUpdates = true;
+        if (showResult) _trayService?.SetUpdateCheckInProgress(true);
+
+        try
+        {
+            var result = await _updateService.CheckForUpdateAsync(cancellationToken);
+            if (result.IsUpdateAvailable
+                && result.LatestVersion is not null
+                && result.InstallerDownloadUri is not null)
+            {
+                var latestVersion = result.LatestVersion;
+                var installerDownloadUri = result.InstallerDownloadUri;
+                var versionText = FormatVersion(latestVersion);
+                Action installUpdate = () =>
+                    _ = DownloadAndInstallUpdateAsync(installerDownloadUri, latestVersion);
+                _mainWindowViewModel?.ShowUpdateAvailable(versionText, installUpdate);
+                _trayService?.ShowUpdateAvailable(versionText, installUpdate);
+                return;
+            }
+
+            _mainWindowViewModel?.ClearUpdate();
+            if (!showResult) return;
+            var message = result.LatestVersion is not null
+                          && result.LatestVersion > result.CurrentVersion
+                          && result.InstallerDownloadUri is null
+                ? "В релизе не найден установщик"
+                : result.HasPublishedRelease
+                    ? $"Последняя версия: {FormatVersion(result.CurrentVersion)}"
+                    : "Релизы ещё не опубликованы";
+            _trayService?.ShowUpdateCheckMessage(message);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Application is shutting down.
+        }
+        catch
+        {
+            if (showResult)
+            {
+                _trayService?.ShowUpdateCheckMessage("Ошибка проверки обновлений");
+            }
+        }
+        finally
+        {
+            _isCheckingForUpdates = false;
+            if (showResult) _trayService?.SetUpdateCheckInProgress(false);
+        }
+    }
+
+    private async Task DownloadAndInstallUpdateAsync(
+        Uri installerDownloadUri,
+        Version version)
+    {
+        if (_isInstallingUpdate || _updateService is null || _updateCancellation is null) return;
+
+        var cancellationToken = _updateCancellation.Token;
+        _isInstallingUpdate = true;
+        _mainWindowViewModel?.SetUpdateInstallationInProgress();
+        _trayService?.SetUpdateInstallationInProgress();
+
+        try
+        {
+            var installerPath = await _updateService.DownloadInstallerAsync(
+                installerDownloadUri,
+                version,
+                cancellationToken);
+            var process = Process.Start(new ProcessStartInfo(installerPath)
+            {
+                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS",
+                UseShellExecute = true
+            });
+
+            if (process is null)
+            {
+                throw new InvalidOperationException("The update installer could not be started.");
+            }
+
+            ExitApplication();
+            return;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+        catch
+        {
+            var versionText = FormatVersion(version);
+            Action retryUpdate = () =>
+                _ = DownloadAndInstallUpdateAsync(installerDownloadUri, version);
+            _mainWindowViewModel?.ShowUpdateAvailable(versionText, retryUpdate);
+            _trayService?.ShowUpdateAvailable(versionText, retryUpdate);
+        }
+        finally
+        {
+            _isInstallingUpdate = false;
+        }
+    }
+
+    private static string FormatVersion(Version version)
+    {
+        var build = version.Build >= 0 ? version.Build : 0;
+        return $"{version.Major}.{version.Minor}.{build}";
     }
 
     private void TogglePanel()
@@ -191,6 +325,17 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _updateCancellation?.Cancel();
+        _updateCancellation?.Dispose();
+        _updateCancellation = null;
+
+        if (_updateTimer is not null)
+        {
+            _updateTimer.Stop();
+            _updateTimer.Tick -= UpdateTimer_Tick;
+            _updateTimer = null;
+        }
+
         if (_pointerTimer is not null)
         {
             _pointerTimer.Stop();

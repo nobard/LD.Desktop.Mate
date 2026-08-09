@@ -8,6 +8,10 @@ namespace Mate.MVVM.ViewModels;
 public sealed class MainWindowViewModel : BaseViewModel
 {
     private string _currentToolTitle = string.Empty;
+    private bool _isUpdateAvailable;
+    private bool _isInstallingUpdate;
+    private string _updateText = string.Empty;
+    private Action? _installUpdateAction;
 
     public MainWindowViewModel(INavigationService navigationService)
     {
@@ -22,6 +26,9 @@ public sealed class MainWindowViewModel : BaseViewModel
             new("文", "Переводчик", typeof(TranslatorViewModel))
         };
         NavigateCommand = new DelegateCommand(Navigate);
+        OpenUpdateCommand = new DelegateCommand(
+            _ => _installUpdateAction?.Invoke(),
+            _ => IsUpdateAvailable && !_isInstallingUpdate && _installUpdateAction is not null);
         Navigate(NavigationItems[0]);
     }
 
@@ -31,10 +38,51 @@ public sealed class MainWindowViewModel : BaseViewModel
 
     public DelegateCommand NavigateCommand { get; }
 
+    public DelegateCommand OpenUpdateCommand { get; }
+
     public string CurrentToolTitle
     {
         get => _currentToolTitle;
         private set => SetProperty(ref _currentToolTitle, value);
+    }
+
+    public bool IsUpdateAvailable
+    {
+        get => _isUpdateAvailable;
+        private set => SetProperty(ref _isUpdateAvailable, value);
+    }
+
+    public string UpdateText
+    {
+        get => _updateText;
+        private set => SetProperty(ref _updateText, value);
+    }
+
+    public void ShowUpdateAvailable(string version, Action installUpdate)
+    {
+        _installUpdateAction = installUpdate;
+        _isInstallingUpdate = false;
+        UpdateText = $"Доступна {version}";
+        IsUpdateAvailable = true;
+        OpenUpdateCommand.RaiseCanExecuteChanged();
+    }
+
+    public void SetUpdateInstallationInProgress()
+    {
+        if (!IsUpdateAvailable) return;
+
+        _isInstallingUpdate = true;
+        UpdateText = "Скачивание обновления…";
+        OpenUpdateCommand.RaiseCanExecuteChanged();
+    }
+
+    public void ClearUpdate()
+    {
+        _installUpdateAction = null;
+        _isInstallingUpdate = false;
+        IsUpdateAvailable = false;
+        UpdateText = string.Empty;
+        OpenUpdateCommand.RaiseCanExecuteChanged();
     }
 
     private void Navigate(object? parameter)
