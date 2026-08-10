@@ -1,4 +1,7 @@
 using System;
+using System.Windows;
+using Mate.MVVM.ViewModels;
+using Mate.MVVM.Views;
 using Mate.Services.Interfaces;
 using Forms = System.Windows.Forms;
 
@@ -8,37 +11,25 @@ public sealed class TrayService : ITrayService
 {
     private readonly IHoverActivationService _hoverActivationService;
     private Forms.NotifyIcon? _notifyIcon;
-    private Forms.ContextMenuStrip? _menu;
-    private Forms.ToolStripMenuItem? _hoverActivationItem;
+    private TrayMenuViewModel? _menuViewModel;
+    private TrayMenuWindow? _menuWindow;
     private System.Drawing.Icon? _trayIcon;
     private System.Drawing.Icon? _updateTrayIcon;
 
-    public TrayService(IHoverActivationService hoverActivationService)
-    {
+    public TrayService(IHoverActivationService hoverActivationService) =>
         _hoverActivationService = hoverActivationService;
-        _hoverActivationService.EnabledChanged += HoverActivationService_EnabledChanged;
-    }
 
     public void Initialize(
         Action togglePanel,
         Action openSettings,
         Action exitApplication)
     {
-        _menu = new Forms.ContextMenuStrip();
-        _menu.Items.Add("Открыть Mate", null, (_, _) => togglePanel());
-        _menu.Items.Add("Настройки", null, (_, _) => openSettings());
-        _menu.Items.Add(new Forms.ToolStripSeparator());
-
-        _hoverActivationItem = new Forms.ToolStripMenuItem("Отключить открытие по наведению")
-        {
-            CheckOnClick = false,
-            Checked = !_hoverActivationService.IsEnabled
-        };
-        _hoverActivationItem.Click += HoverActivationItem_Click;
-        _menu.Items.Add(_hoverActivationItem);
-        _menu.Items.Add(new Forms.ToolStripSeparator());
-
-        _menu.Items.Add("Выход", null, (_, _) => exitApplication());
+        _menuViewModel = new TrayMenuViewModel(
+            _hoverActivationService,
+            togglePanel,
+            openSettings,
+            exitApplication);
+        _menuWindow = new TrayMenuWindow(_menuViewModel);
 
         _trayIcon = LoadTrayIcon("MateTray.ico");
         _updateTrayIcon = LoadTrayIcon("MateTrayUpdate.ico", _trayIcon);
@@ -46,13 +37,21 @@ public sealed class TrayService : ITrayService
         {
             Icon = _trayIcon,
             Text = "Mate",
-            ContextMenuStrip = _menu,
             Visible = true
         };
-        _notifyIcon.MouseClick += (_, eventArgs) =>
+        _notifyIcon.MouseClick += NotifyIcon_MouseClick;
+
+        void NotifyIcon_MouseClick(object? sender, Forms.MouseEventArgs eventArgs)
         {
-            if (eventArgs.Button == Forms.MouseButtons.Left) togglePanel();
-        };
+            if (eventArgs.Button == Forms.MouseButtons.Left)
+            {
+                togglePanel();
+                return;
+            }
+
+            if (eventArgs.Button != Forms.MouseButtons.Right) return;
+            Application.Current.Dispatcher.BeginInvoke(() => _menuWindow?.ShowMenu());
+        }
     }
 
     public void SetUpdateCheckInProgress(bool isInProgress)
@@ -60,45 +59,40 @@ public sealed class TrayService : ITrayService
         // Update progress is shown inside the application.
     }
 
-    public void ShowUpdateAvailable(string version, Action installUpdate)
-    {
+    public void ShowUpdateAvailable(string version, Action installUpdate) =>
         SetUpdateIconState(hasUpdate: true);
-    }
 
     public void SetUpdateInstallationInProgress()
     {
         // Installation progress is shown inside the application.
     }
 
-    public void ShowUpdateCheckMessage(string message)
-    {
+    public void ShowUpdateCheckMessage(string message) =>
         SetUpdateIconState(hasUpdate: false);
-    }
 
     public void Dispose()
     {
-        _hoverActivationService.EnabledChanged -= HoverActivationService_EnabledChanged;
-        _notifyIcon?.Dispose();
-        _notifyIcon = null;
+        if (_notifyIcon is not null)
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+            _notifyIcon = null;
+        }
+
+        if (_menuWindow is not null)
+        {
+            _menuWindow.Close();
+            _menuWindow = null;
+        }
+
+        _menuViewModel?.Dispose();
+        _menuViewModel = null;
+
         _updateTrayIcon?.Dispose();
         _updateTrayIcon = null;
         _trayIcon?.Dispose();
         _trayIcon = null;
-        _menu?.Dispose();
-        _menu = null;
-        _hoverActivationItem = null;
     }
-
-    private void HoverActivationService_EnabledChanged(object? sender, EventArgs e)
-    {
-        if (_hoverActivationItem is not null)
-        {
-            _hoverActivationItem.Checked = !_hoverActivationService.IsEnabled;
-        }
-    }
-
-    private void HoverActivationItem_Click(object? sender, EventArgs e) =>
-        _hoverActivationService.SetEnabled(!_hoverActivationService.IsEnabled);
 
     private void SetUpdateIconState(bool hasUpdate)
     {
@@ -121,7 +115,7 @@ public sealed class TrayService : ITrayService
     {
         try
         {
-            var resource = System.Windows.Application.GetResourceStream(
+            var resource = Application.GetResourceStream(
                 new Uri($"pack://application:,,,/Assets/{resourceName}", UriKind.Absolute));
             if (resource is not null)
             {
