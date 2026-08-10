@@ -10,11 +10,13 @@ public sealed class TrayService : ITrayService
 {
     private readonly IThemeService _themeService;
     private readonly IAutoStartService _autoStartService;
+    private readonly IHoverActivationService _hoverActivationService;
     private readonly INotificationCenterService _notificationCenterService;
     private readonly Dictionary<AppTheme, Forms.ToolStripMenuItem> _themeItems = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _menu;
     private Forms.ToolStripMenuItem? _autoStartItem;
+    private Forms.ToolStripMenuItem? _hoverActivationItem;
     private Forms.ToolStripMenuItem? _updateItem;
     private Action? _checkForUpdatesAction;
     private Action? _installUpdateAction;
@@ -24,12 +26,15 @@ public sealed class TrayService : ITrayService
     public TrayService(
         IThemeService themeService,
         IAutoStartService autoStartService,
+        IHoverActivationService hoverActivationService,
         INotificationCenterService notificationCenterService)
     {
         _themeService = themeService;
         _autoStartService = autoStartService;
+        _hoverActivationService = hoverActivationService;
         _notificationCenterService = notificationCenterService;
         _themeService.ThemeChanged += ThemeService_ThemeChanged;
+        _hoverActivationService.EnabledChanged += HoverActivationService_EnabledChanged;
     }
 
     public void Initialize(Action togglePanel, Action checkForUpdates, Action exitApplication)
@@ -60,6 +65,14 @@ public sealed class TrayService : ITrayService
         };
         _autoStartItem.Click += AutoStartItem_Click;
         _menu.Items.Add(_autoStartItem);
+
+        _hoverActivationItem = new Forms.ToolStripMenuItem("Открывать при наведении")
+        {
+            CheckOnClick = false,
+            Checked = _hoverActivationService.IsEnabled
+        };
+        _hoverActivationItem.Click += HoverActivationItem_Click;
+        _menu.Items.Add(_hoverActivationItem);
 
         _updateItem = new Forms.ToolStripMenuItem("Проверить обновления");
         _updateItem.Click += UpdateItem_Click;
@@ -136,6 +149,7 @@ public sealed class TrayService : ITrayService
     public void Dispose()
     {
         _themeService.ThemeChanged -= ThemeService_ThemeChanged;
+        _hoverActivationService.EnabledChanged -= HoverActivationService_EnabledChanged;
         _notifyIcon?.Dispose();
         _notifyIcon = null;
         _updateTrayIcon?.Dispose();
@@ -145,6 +159,7 @@ public sealed class TrayService : ITrayService
         _menu?.Dispose();
         _menu = null;
         _autoStartItem = null;
+        _hoverActivationItem = null;
         _updateItem = null;
         _checkForUpdatesAction = null;
         _installUpdateAction = null;
@@ -152,6 +167,14 @@ public sealed class TrayService : ITrayService
     }
 
     private void ThemeService_ThemeChanged(object? sender, EventArgs e) => UpdateThemeChecks();
+
+    private void HoverActivationService_EnabledChanged(object? sender, EventArgs e)
+    {
+        if (_hoverActivationItem is not null)
+        {
+            _hoverActivationItem.Checked = _hoverActivationService.IsEnabled;
+        }
+    }
 
     private void UpdateItem_Click(object? sender, EventArgs e)
     {
@@ -176,6 +199,9 @@ public sealed class TrayService : ITrayService
             "Не удалось изменить настройку автозапуска.",
             MateNotificationKind.Error);
     }
+
+    private void HoverActivationItem_Click(object? sender, EventArgs e) =>
+        _hoverActivationService.SetEnabled(!_hoverActivationService.IsEnabled);
 
     private void UpdateThemeChecks()
     {

@@ -21,6 +21,7 @@ public partial class App : Application
     private ITrayService? _trayService;
     private IUpdateService? _updateService;
     private INotificationCenterService? _notificationCenterService;
+    private IHoverActivationService? _hoverActivationService;
     private MainWindow? _mainWindow;
     private MainWindowViewModel? _mainWindowViewModel;
     private HotZoneWindow? _hotZoneWindow;
@@ -61,10 +62,12 @@ public partial class App : Application
         _mainWindow.ApplyScreenScale();
         MainWindow = _mainWindow;
 
+        _hoverActivationService = _container.Resolve<IHoverActivationService>();
+        _hoverActivationService.EnabledChanged += HoverActivationService_EnabledChanged;
         _hotZoneWindow = new HotZoneWindow();
         _hotZoneWindow.ApplyScale(_mainWindow.InterfaceScale);
         _hotZoneWindow.PositionAtTopCenter();
-        _hotZoneWindow.Show();
+        if (_hoverActivationService.IsEnabled) _hotZoneWindow.Show();
 
         _notificationCenterService = _container.Resolve<INotificationCenterService>();
         for (var index = 0; index < 2; index++)
@@ -243,11 +246,13 @@ public partial class App : Application
         if (_mainWindow is null) return;
 
         var pointer = Forms.Cursor.Position;
-        var pointerInHotZone = IsPointerInTopCenterHotZone(pointer);
+        var hoverActivationEnabled = _hoverActivationService?.IsEnabled ?? true;
+        var pointerInHotZone = hoverActivationEnabled
+                               && IsPointerInTopCenterHotZone(pointer);
 
         if (!_mainWindow.IsVisible)
         {
-            if (pointerInHotZone) ShowPanel(activate: false);
+            if (hoverActivationEnabled && pointerInHotZone) ShowPanel(activate: false);
             return;
         }
 
@@ -279,6 +284,27 @@ public partial class App : Application
 
         _pointerLeftAtUtc ??= now;
         if (now - _pointerLeftAtUtc >= HideDelay) HidePanel();
+    }
+
+    private void HoverActivationService_EnabledChanged(object? sender, EventArgs e)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() => HoverActivationService_EnabledChanged(sender, e)));
+            return;
+        }
+
+        if (_hotZoneWindow is null || _hoverActivationService is null) return;
+
+        if (_hoverActivationService.IsEnabled)
+        {
+            _hotZoneWindow.PositionAtTopCenter();
+            if (!_hotZoneWindow.IsVisible) _hotZoneWindow.Show();
+            return;
+        }
+
+        _hotZoneWindow.Hide();
     }
 
     private void NotificationCenterService_NotificationReceived(
@@ -440,6 +466,11 @@ public partial class App : Application
         if (_notificationCenterService is not null)
         {
             _notificationCenterService.NotificationReceived -= NotificationCenterService_NotificationReceived;
+        }
+        if (_hoverActivationService is not null)
+        {
+            _hoverActivationService.EnabledChanged -= HoverActivationService_EnabledChanged;
+            _hoverActivationService = null;
         }
         foreach (var notificationPopupWindow in _notificationPopupWindows)
         {
