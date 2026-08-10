@@ -10,6 +10,8 @@ public sealed class WindowsAutoStartService : IAutoStartService
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "Mate";
 
+    public event EventHandler? EnabledChanged;
+
     public bool IsEnabled
     {
         get
@@ -32,6 +34,7 @@ public sealed class WindowsAutoStartService : IAutoStartService
 
     public bool SetEnabled(bool enabled)
     {
+        var wasEnabled = IsEnabled;
         try
         {
             if (enabled)
@@ -45,7 +48,14 @@ public sealed class WindowsAutoStartService : IAutoStartService
                 key?.DeleteValue(ValueName, throwOnMissingValue: false);
             }
 
-            return IsEnabled == enabled;
+            var isEnabled = IsEnabled;
+            var succeeded = isEnabled == enabled;
+            if (succeeded && wasEnabled != isEnabled)
+            {
+                EnabledChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            return succeeded;
         }
         catch
         {

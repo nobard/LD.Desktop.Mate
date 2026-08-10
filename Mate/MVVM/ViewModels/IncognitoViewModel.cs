@@ -5,7 +5,7 @@ using Mate.Services.Interfaces;
 
 namespace Mate.MVVM.ViewModels;
 
-public sealed class IncognitoViewModel : ToolViewModel
+public sealed class IncognitoViewModel : ToolViewModel, IDisposable
 {
     private readonly IPrivateBrowserService _privateBrowserService;
     private string _searchQuery = string.Empty;
@@ -14,13 +14,18 @@ public sealed class IncognitoViewModel : ToolViewModel
     public IncognitoViewModel(IPrivateBrowserService privateBrowserService)
     {
         _privateBrowserService = privateBrowserService;
+        _privateBrowserService.SettingsChanged += BrowserService_SettingsChanged;
         SearchCommand = new DelegateCommand(_ => Search(), _ => !string.IsNullOrWhiteSpace(SearchQuery));
         ClearSearchCommand = new DelegateCommand(_ => SearchQuery = string.Empty, _ => HasSearchQuery);
     }
 
-    public override string Title => "Инкогнито";
+    public override string Title => "Браузер";
 
-    public override string Description => "Поиск в новом приватном окне браузера.";
+    public override string Description => "Поиск в выбранном браузере.";
+
+    public string ModeDescription => _privateBrowserService.Settings.UsePrivateMode
+        ? "Откроется новое приватное окно выбранного браузера"
+        : "Откроется новое окно выбранного браузера";
 
     public DelegateCommand SearchCommand { get; }
 
@@ -63,4 +68,10 @@ public sealed class IncognitoViewModel : ToolViewModel
             ErrorMessage = "Не удалось открыть приватное окно браузера";
         }
     }
+
+    private void BrowserService_SettingsChanged(object? sender, EventArgs e) =>
+        OnPropertyChanged(nameof(ModeDescription));
+
+    public void Dispose() =>
+        _privateBrowserService.SettingsChanged -= BrowserService_SettingsChanged;
 }

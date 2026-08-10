@@ -360,6 +360,17 @@
                                     <Canvas x:Name="FolderIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 3,7 L 10,7 L 12,5 L 21,5 L 21,19 L 3,19 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeLineJoin="Round" Fill="Transparent" /></Canvas>
                                     <Canvas x:Name="ClipboardIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 6,5 L 18,5 L 18,20 L 6,20 Z M 9,5 L 9,3 L 15,3 L 15,5 M 9,10 L 15,10 M 9,14 L 15,14" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" StrokeLineJoin="Round" Fill="Transparent" /></Canvas>
                                     <Canvas x:Name="PinIcon" Width="24" Height="24" Visibility="Collapsed"><Path Data="M 8,3 L 16,3 L 16,8 L 19,11 L 19,13 L 13,13 L 13,21 L 11,21 L 11,13 L 5,13 L 5,11 L 8,8 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" /></Canvas>
+                                    <Canvas x:Name="BrowserIcon" Width="24" Height="24" Visibility="Collapsed">
+                                        <Ellipse Canvas.Left="3" Canvas.Top="3" Width="18" Height="18"
+                                                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                 StrokeThickness="1.7" />
+                                        <Path Data="M 3.8,12 L 20.2,12 M 12,3.5 C 8.8,6.7 8.8,17.3 12,20.5 M 12,3.5 C 15.2,6.7 15.2,17.3 12,20.5"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.5"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Fill="Transparent" />
+                                    </Canvas>
                                     <Canvas x:Name="IncognitoIcon" Width="24" Height="24" Visibility="Collapsed">
                                         <Path Data="M 8.5,3.5 L 15.5,3.5 L 17,9 L 7,9 Z"
                                               Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
@@ -419,7 +430,8 @@
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Папка"><Setter TargetName="FolderIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Буфер обмена"><Setter TargetName="ClipboardIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Заготовки"><Setter TargetName="PinIcon" Property="Visibility" Value="Visible" /></DataTrigger>
-                                <DataTrigger Binding="{Binding ToolTip}" Value="Инкогнито"><Setter TargetName="IncognitoIcon" Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ToolTip}" Value="Браузер"><Setter TargetName="BrowserIcon" Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding UsePrivateBrowserIcon}" Value="True"><Setter TargetName="BrowserIcon" Property="Visibility" Value="Collapsed" /><Setter TargetName="IncognitoIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Переводчик"><Setter TargetName="TranslateIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Уведомления"><Setter TargetName="NotificationsIcon" Property="Visibility" Value="Visible" /></DataTrigger>
                                 <DataTrigger Binding="{Binding ToolTip}" Value="Помодоро"><Setter TargetName="PomodoroIcon" Property="Visibility" Value="Visible" /></DataTrigger>

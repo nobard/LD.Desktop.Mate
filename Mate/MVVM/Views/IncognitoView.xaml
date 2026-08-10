@@ -115,7 +115,7 @@
 
         <StackPanel Grid.Row="1" Margin="31,18,24,0">
             <TextBlock Text="Введите запрос или ссылку" Foreground="#A0A0A0" FontSize="13" />
-            <TextBlock Text="Откроется новое приватное окно браузера" Foreground="#6F6F6F" FontSize="11" Margin="0,6,0,0" />
+            <TextBlock Text="{Binding ModeDescription}" Foreground="#6F6F6F" FontSize="11" Margin="0,6,0,0" />
             <TextBlock Text="{Binding ErrorMessage}" Foreground="#B79C9C" FontSize="10" Margin="0,12,0,0" />
         </StackPanel>
     </Grid>

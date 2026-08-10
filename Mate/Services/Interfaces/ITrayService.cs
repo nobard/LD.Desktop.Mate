@@ -4,7 +4,10 @@ namespace Mate.Services.Interfaces;
 
 public interface ITrayService : IDisposable
 {
-    void Initialize(Action togglePanel, Action checkForUpdates, Action exitApplication);
+    void Initialize(
+        Action togglePanel,
+        Action openSettings,
+        Action exitApplication);
 
     void SetUpdateCheckInProgress(bool isInProgress);
 

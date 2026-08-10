@@ -23,7 +23,9 @@ public partial class App : Application
     private INotificationCenterService? _notificationCenterService;
     private IHoverActivationService? _hoverActivationService;
     private MainWindow? _mainWindow;
+    private SettingsWindow? _settingsWindow;
     private MainWindowViewModel? _mainWindowViewModel;
+    private SettingsViewModel? _settingsViewModel;
     private HotZoneWindow? _hotZoneWindow;
     private readonly Queue<MateNotification> _pendingNotificationPopups = new();
     private readonly List<NotificationPopupWindow> _notificationPopupWindows = new();
@@ -82,10 +84,12 @@ public partial class App : Application
 
         _trayService = _container.Resolve<ITrayService>();
         _updateService = _container.Resolve<IUpdateService>();
+        _settingsViewModel = _container.Resolve<SettingsViewModel>();
+        _settingsViewModel.CheckForUpdatesRequested += SettingsViewModel_CheckForUpdatesRequested;
         _updateCancellation = new CancellationTokenSource();
         _trayService.Initialize(
             () => Dispatcher.Invoke(TogglePanel),
-            () => Dispatcher.Invoke(() => _ = CheckForUpdatesAsync(showResult: true)),
+            () => Dispatcher.Invoke(ShowSettings),
             () => Dispatcher.Invoke(ExitApplication));
 
         _updateTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -107,13 +111,16 @@ public partial class App : Application
     private void UpdateTimer_Tick(object? sender, EventArgs e) =>
         _ = CheckForUpdatesAsync(showResult: false);
 
+    private void SettingsViewModel_CheckForUpdatesRequested(object? sender, EventArgs e) =>
+        _ = CheckForUpdatesAsync(showResult: true);
+
     private async Task CheckForUpdatesAsync(bool showResult)
     {
         if (_isCheckingForUpdates || _updateService is null || _updateCancellation is null) return;
 
         var cancellationToken = _updateCancellation.Token;
         _isCheckingForUpdates = true;
-        if (showResult) _trayService?.SetUpdateCheckInProgress(true);
+        if (showResult) _settingsViewModel?.SetUpdateCheckInProgress(true);
 
         try
         {
@@ -124,6 +131,7 @@ public partial class App : Application
                 Action installUpdate = () =>
                     _ = DownloadAndInstallUpdateAsync(versionText);
                 _mainWindowViewModel?.ShowUpdateAvailable(versionText, installUpdate);
+                _settingsViewModel?.ShowUpdateAvailable(versionText, installUpdate);
                 _trayService?.ShowUpdateAvailable(versionText, installUpdate);
                 _notificationCenterService?.Publish(
                     "Доступно обновление",
@@ -138,6 +146,7 @@ public partial class App : Application
             var message = result.HasPublishedRelease
                 ? $"Последняя версия: {result.CurrentVersion}"
                 : "Проверка обновлений доступна после установки";
+            _settingsViewModel?.ShowUpdateCheckMessage(message);
             _trayService?.ShowUpdateCheckMessage(message);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -148,6 +157,7 @@ public partial class App : Application
         {
             if (showResult)
             {
+                _settingsViewModel?.ShowUpdateCheckMessage("Не удалось проверить обновления");
                 _trayService?.ShowUpdateCheckMessage("Ошибка проверки обновлений");
                 _notificationCenterService?.Publish(
                     "Ошибка проверки обновлений",
@@ -158,7 +168,7 @@ public partial class App : Application
         finally
         {
             _isCheckingForUpdates = false;
-            if (showResult) _trayService?.SetUpdateCheckInProgress(false);
+            if (showResult) _settingsViewModel?.SetUpdateCheckInProgress(false);
         }
     }
 
@@ -169,6 +179,7 @@ public partial class App : Application
         var cancellationToken = _updateCancellation.Token;
         _isInstallingUpdate = true;
         _mainWindowViewModel?.SetUpdateInstallationInProgress();
+        _settingsViewModel?.SetUpdateInstallationInProgress();
         _trayService?.SetUpdateInstallationInProgress();
 
         try
@@ -187,6 +198,7 @@ public partial class App : Application
             Action retryUpdate = () =>
                 _ = DownloadAndInstallUpdateAsync(versionText);
             _mainWindowViewModel?.ShowUpdateAvailable(versionText, retryUpdate);
+            _settingsViewModel?.ShowUpdateAvailable(versionText, retryUpdate);
             _trayService?.ShowUpdateAvailable(versionText, retryUpdate);
             _notificationCenterService?.Publish(
                 "Не удалось обновить Mate",
@@ -216,6 +228,14 @@ public partial class App : Application
         }
 
         ShowPanel(activate: true);
+    }
+
+    private void ShowSettings()
+    {
+        if (_container is null) return;
+
+        _settingsWindow ??= _container.Resolve<SettingsWindow>();
+        _settingsWindow.ShowSettings();
     }
 
     private void ShowPanel(bool activate)
@@ -445,6 +465,19 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (_settingsViewModel is not null)
+        {
+            _settingsViewModel.CheckForUpdatesRequested -= SettingsViewModel_CheckForUpdatesRequested;
+            _settingsViewModel = null;
+        }
+
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.AllowClose = true;
+            _settingsWindow.Close();
+            _settingsWindow = null;
+        }
+
         _updateCancellation?.Cancel();
         _updateCancellation?.Dispose();
         _updateCancellation = null;

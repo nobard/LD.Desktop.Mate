@@ -6,6 +6,8 @@ namespace Mate.Services.Interfaces;
 
 public interface IUpdateService
 {
+    string CurrentVersion { get; }
+
     Task<UpdateCheckResult> CheckForUpdateAsync(CancellationToken cancellationToken = default);
 
     Task DownloadUpdateAsync(CancellationToken cancellationToken = default);

@@ -34,7 +34,9 @@ public sealed class FileShelfService : IFileShelfService
     private readonly ConcurrentDictionary<string, byte> _pendingScreenshots = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _storageLock = new();
     private readonly LowLevelKeyboardProcedure _keyboardProcedure;
+    private readonly string _storageSettingsPath;
     private FileSystemWatcher? _screenshotWatcher;
+    private FileSystemWatcher? _storageWatcher;
     private HwndSource? _clipboardSource;
     private nint _keyboardHook;
     private long _screenshotArmedAtTicks;
@@ -44,25 +46,73 @@ public sealed class FileShelfService : IFileShelfService
 
     public FileShelfService()
     {
-        StorageFolder = Path.Combine(
+        var dataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LD.Desktop.Mate",
-            "Files");
+            "LD.Desktop.Mate");
+        Directory.CreateDirectory(dataFolder);
+        _storageSettingsPath = Path.Combine(dataFolder, "file-shelf-folder.txt");
+        StorageFolder = LoadStorageFolder(dataFolder);
         Directory.CreateDirectory(StorageFolder);
 
         _keyboardProcedure = KeyboardHookCallback;
+        InitializeStorageWatcher();
         InitializeFolderWatcher();
         InitializeClipboardMonitor();
     }
 
     public event Action? FilesChanged;
 
-    public string StorageFolder { get; }
+    public event Action? StorageFolderChanged;
 
-    public IReadOnlyList<string> GetFiles() => Directory
-        .EnumerateFiles(StorageFolder, "*", SearchOption.TopDirectoryOnly)
-        .OrderByDescending(File.GetLastWriteTimeUtc)
-        .ToArray();
+    public string StorageFolder { get; private set; }
+
+    public IReadOnlyList<string> GetFiles()
+    {
+        var storageFolder = StorageFolder;
+        if (!Directory.Exists(storageFolder)) return Array.Empty<string>();
+
+        try
+        {
+            return Directory
+                .EnumerateFiles(storageFolder, "*", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ToArray();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    public bool SetStorageFolder(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath)) return false;
+
+        try
+        {
+            var fullPath = Path.GetFullPath(folderPath.Trim());
+            Directory.CreateDirectory(fullPath);
+
+            lock (_storageLock)
+            {
+                if (string.Equals(StorageFolder, fullPath, StringComparison.OrdinalIgnoreCase)) return true;
+                File.WriteAllText(_storageSettingsPath, fullPath);
+                StorageFolder = fullPath;
+            }
+
+            InitializeStorageWatcher();
+            StorageFolderChanged?.Invoke();
+            FilesChanged?.Invoke();
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException
+                                           or UnauthorizedAccessException
+                                           or ArgumentException
+                                           or NotSupportedException)
+        {
+            return false;
+        }
+    }
 
     public void AddFiles(IEnumerable<string> sourcePaths)
     {
@@ -132,6 +182,41 @@ public sealed class FileShelfService : IFileShelfService
             _screenshotWatcher = null;
         }
     }
+
+    private void InitializeStorageWatcher()
+    {
+        if (_storageWatcher is not null)
+        {
+            _storageWatcher.EnableRaisingEvents = false;
+            _storageWatcher.Created -= StorageWatcherChanged;
+            _storageWatcher.Deleted -= StorageWatcherChanged;
+            _storageWatcher.Renamed -= StorageFolderRenamed;
+            _storageWatcher.Dispose();
+            _storageWatcher = null;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(StorageFolder);
+            _storageWatcher = new FileSystemWatcher(StorageFolder)
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime | NotifyFilters.LastWrite
+            };
+            _storageWatcher.Created += StorageWatcherChanged;
+            _storageWatcher.Deleted += StorageWatcherChanged;
+            _storageWatcher.Renamed += StorageFolderRenamed;
+            _storageWatcher.EnableRaisingEvents = true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _storageWatcher = null;
+        }
+    }
+
+    private void StorageWatcherChanged(object sender, FileSystemEventArgs e) => FilesChanged?.Invoke();
+
+    private void StorageFolderRenamed(object sender, RenamedEventArgs e) => FilesChanged?.Invoke();
 
     private void InitializeClipboardMonitor()
     {
@@ -290,6 +375,12 @@ public sealed class FileShelfService : IFileShelfService
                     if (File.Exists(path))
                     {
                         await Task.Delay(600);
+                        if (IsInsideStorage(path))
+                        {
+                            FilesChanged?.Invoke();
+                            return;
+                        }
+
                         var lastClipboardScreenshot = Interlocked.Read(ref _lastClipboardScreenshotTicks);
                         if (lastClipboardScreenshot != 0 &&
                             DateTime.UtcNow - new DateTime(lastClipboardScreenshot, DateTimeKind.Utc) < TimeSpan.FromSeconds(2))
@@ -354,6 +445,25 @@ public sealed class FileShelfService : IFileShelfService
 
     private static bool IsKeyPressed(int virtualKey) => (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
 
+    private string LoadStorageFolder(string dataFolder)
+    {
+        var defaultFolder = Path.Combine(dataFolder, "Files");
+        try
+        {
+            if (!File.Exists(_storageSettingsPath)) return defaultFolder;
+            var configuredFolder = File.ReadAllText(_storageSettingsPath).Trim();
+            if (string.IsNullOrWhiteSpace(configuredFolder)) return defaultFolder;
+
+            var fullPath = Path.GetFullPath(configuredFolder);
+            Directory.CreateDirectory(fullPath);
+            return fullPath;
+        }
+        catch
+        {
+            return defaultFolder;
+        }
+    }
+
     private static string? GetScreenshotsFolder()
     {
         if (SHGetKnownFolderPath(ScreenshotsFolderId, 0, nint.Zero, out var pathPointer) == 0)
@@ -385,6 +495,16 @@ public sealed class FileShelfService : IFileShelfService
             _screenshotWatcher.Created -= ScreenshotCreated;
             _screenshotWatcher.Renamed -= ScreenshotRenamed;
             _screenshotWatcher.Dispose();
+        }
+
+        if (_storageWatcher is not null)
+        {
+            _storageWatcher.EnableRaisingEvents = false;
+            _storageWatcher.Created -= StorageWatcherChanged;
+            _storageWatcher.Deleted -= StorageWatcherChanged;
+            _storageWatcher.Renamed -= StorageFolderRenamed;
+            _storageWatcher.Dispose();
+            _storageWatcher = null;
         }
 
         if (_keyboardHook != nint.Zero)

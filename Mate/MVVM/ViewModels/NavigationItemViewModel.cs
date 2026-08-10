@@ -6,6 +6,7 @@ namespace Mate.MVVM.ViewModels;
 public sealed class NavigationItemViewModel : ObservableObject
 {
     private bool _isSelected;
+    private bool _usePrivateBrowserIcon;
 
     public NavigationItemViewModel(string icon, string toolTip, Type targetViewModelType)
     {
@@ -24,5 +25,11 @@ public sealed class NavigationItemViewModel : ObservableObject
     {
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
+    }
+
+    public bool UsePrivateBrowserIcon
+    {
+        get => _usePrivateBrowserIcon;
+        set => SetProperty(ref _usePrivateBrowserIcon, value);
     }
 }

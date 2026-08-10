@@ -26,10 +26,12 @@ public sealed class VelopackUpdateService : IUpdateService
         _updateManager = new UpdateManager(source);
     }
 
+    public string CurrentVersion => GetCurrentVersionText();
+
     public async Task<UpdateCheckResult> CheckForUpdateAsync(
         CancellationToken cancellationToken = default)
     {
-        var currentVersion = GetCurrentVersionText();
+        var currentVersion = CurrentVersion;
         if (!_updateManager.IsInstalled)
         {
             _availableUpdate = null;

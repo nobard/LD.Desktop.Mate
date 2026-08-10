@@ -1,43 +1,60 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Mate.MVVM.Core;
 using Mate.Services.Interfaces;
 
 namespace Mate.MVVM.ViewModels;
 
-public sealed class MainWindowViewModel : BaseViewModel
+public sealed class MainWindowViewModel : BaseViewModel, IDisposable
 {
+    private readonly IPrivateBrowserService _browserService;
+    private readonly IFeatureLayoutService _featureLayoutService;
+    private readonly NavigationItemViewModel _browserNavigationItem;
+    private readonly IReadOnlyDictionary<AppFeature, NavigationItemViewModel> _navigationItemsByFeature;
     private string _currentToolTitle = string.Empty;
     private bool _isUpdateAvailable;
     private bool _isInstallingUpdate;
     private string _updateText = string.Empty;
     private Action? _installUpdateAction;
 
-    public MainWindowViewModel(INavigationService navigationService)
+    public MainWindowViewModel(
+        INavigationService navigationService,
+        IPrivateBrowserService browserService,
+        IFeatureLayoutService featureLayoutService)
     {
         NavigationService = navigationService;
-        NavigationItems = new List<NavigationItemViewModel>
+        _browserService = browserService;
+        _featureLayoutService = featureLayoutService;
+        _browserNavigationItem = new("◉", "Браузер", typeof(IncognitoViewModel))
         {
-            new("♪", "Плеер", typeof(MusicViewModel)),
-            new("□", "Папка", typeof(FolderViewModel)),
-            new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
-            new("⚑", "Заготовки", typeof(SnippetsViewModel)),
-            new("◉", "Инкогнито", typeof(IncognitoViewModel)),
-            new("文", "Переводчик", typeof(TranslatorViewModel)),
-            new("●", "Уведомления", typeof(NotificationsViewModel)),
-            new("◌", "Помодоро", typeof(PomodoroViewModel))
+            UsePrivateBrowserIcon = _browserService.Settings.UsePrivateMode
         };
+        _navigationItemsByFeature = new Dictionary<AppFeature, NavigationItemViewModel>
+        {
+            [AppFeature.Player] = new("♪", "Плеер", typeof(MusicViewModel)),
+            [AppFeature.Folder] = new("□", "Папка", typeof(FolderViewModel)),
+            [AppFeature.Clipboard] = new("▣", "Буфер обмена", typeof(ClipboardViewModel)),
+            [AppFeature.Snippets] = new("⚑", "Заготовки", typeof(SnippetsViewModel)),
+            [AppFeature.Browser] = _browserNavigationItem,
+            [AppFeature.Translator] = new("文", "Переводчик", typeof(TranslatorViewModel)),
+            [AppFeature.Notifications] = new("●", "Уведомления", typeof(NotificationsViewModel)),
+            [AppFeature.Pomodoro] = new("◌", "Помодоро", typeof(PomodoroViewModel))
+        };
+        NavigationItems = new ObservableCollection<NavigationItemViewModel>();
         NavigateCommand = new DelegateCommand(Navigate);
         OpenUpdateCommand = new DelegateCommand(
             _ => _installUpdateAction?.Invoke(),
             _ => IsUpdateAvailable && !_isInstallingUpdate && _installUpdateAction is not null);
-        Navigate(NavigationItems[0]);
+        _browserService.SettingsChanged += BrowserService_SettingsChanged;
+        _featureLayoutService.LayoutChanged += FeatureLayoutService_LayoutChanged;
+        ApplyFeatureLayout();
     }
 
     public INavigationService NavigationService { get; }
 
-    public IReadOnlyList<NavigationItemViewModel> NavigationItems { get; }
+    public ObservableCollection<NavigationItemViewModel> NavigationItems { get; }
 
     public DelegateCommand NavigateCommand { get; }
 
@@ -97,7 +114,7 @@ public sealed class MainWindowViewModel : BaseViewModel
 
     private void Navigate(object? parameter)
     {
-        if (parameter is not NavigationItemViewModel item) return;
+        if (parameter is not NavigationItemViewModel item || !NavigationItems.Contains(item)) return;
 
         switch (item.TargetViewModelType)
         {
@@ -118,5 +135,41 @@ public sealed class MainWindowViewModel : BaseViewModel
         }
 
         CurrentToolTitle = item.ToolTip.ToUpperInvariant();
+    }
+
+    private void BrowserService_SettingsChanged(object? sender, EventArgs e) =>
+        _browserNavigationItem.UsePrivateBrowserIcon = _browserService.Settings.UsePrivateMode;
+
+    private void FeatureLayoutService_LayoutChanged(object? sender, EventArgs e) => ApplyFeatureLayout();
+
+    private void ApplyFeatureLayout()
+    {
+        var selectedItem = NavigationItems.FirstOrDefault(item => item.IsSelected);
+        NavigationItems.Clear();
+
+        foreach (var layoutItem in _featureLayoutService.Items)
+        {
+            if (layoutItem.IsVisible
+                && _navigationItemsByFeature.TryGetValue(layoutItem.Feature, out var navigationItem))
+            {
+                NavigationItems.Add(navigationItem);
+            }
+        }
+
+        var selectedItemRemainsVisible = selectedItem is not null && NavigationItems.Contains(selectedItem);
+        foreach (var navigationItem in _navigationItemsByFeature.Values)
+        {
+            navigationItem.IsSelected = selectedItemRemainsVisible
+                                        && ReferenceEquals(navigationItem, selectedItem);
+        }
+
+        if (selectedItemRemainsVisible) return;
+        if (NavigationItems.Count > 0) Navigate(NavigationItems[0]);
+    }
+
+    public void Dispose()
+    {
+        _browserService.SettingsChanged -= BrowserService_SettingsChanged;
+        _featureLayoutService.LayoutChanged -= FeatureLayoutService_LayoutChanged;
     }
 }

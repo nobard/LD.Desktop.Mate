@@ -27,6 +27,7 @@ public static class AutofacConfig
         builder.RegisterType<VelopackUpdateService>().As<IUpdateService>().SingleInstance();
         builder.RegisterType<NotificationCenterService>().As<INotificationCenterService>().SingleInstance();
         builder.RegisterType<PomodoroSettingsService>().As<IPomodoroSettingsService>().SingleInstance();
+        builder.RegisterType<FeatureLayoutService>().As<IFeatureLayoutService>().SingleInstance();
 
         builder.Register<Func<Type, BaseViewModel>>(context =>
         {
@@ -43,11 +44,13 @@ public static class AutofacConfig
         builder.RegisterType<TranslatorViewModel>().SingleInstance();
         builder.RegisterType<NotificationsViewModel>().SingleInstance();
         builder.RegisterType<PomodoroViewModel>().SingleInstance();
+        builder.RegisterType<SettingsViewModel>().SingleInstance();
 
         builder.Register(context => new MainWindow
         {
             DataContext = context.Resolve<MainWindowViewModel>()
         }).SingleInstance();
+        builder.RegisterType<SettingsWindow>().SingleInstance();
 
         return builder.Build();
     }

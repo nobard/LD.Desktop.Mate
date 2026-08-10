@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Mate.Models;
 using Mate.Services.Interfaces;
 using Forms = System.Windows.Forms;
 
@@ -8,75 +6,36 @@ namespace Mate.Services.Implementations;
 
 public sealed class TrayService : ITrayService
 {
-    private readonly IThemeService _themeService;
-    private readonly IAutoStartService _autoStartService;
     private readonly IHoverActivationService _hoverActivationService;
-    private readonly INotificationCenterService _notificationCenterService;
-    private readonly Dictionary<AppTheme, Forms.ToolStripMenuItem> _themeItems = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _menu;
-    private Forms.ToolStripMenuItem? _autoStartItem;
     private Forms.ToolStripMenuItem? _hoverActivationItem;
-    private Forms.ToolStripMenuItem? _updateItem;
-    private Action? _checkForUpdatesAction;
-    private Action? _installUpdateAction;
     private System.Drawing.Icon? _trayIcon;
     private System.Drawing.Icon? _updateTrayIcon;
 
-    public TrayService(
-        IThemeService themeService,
-        IAutoStartService autoStartService,
-        IHoverActivationService hoverActivationService,
-        INotificationCenterService notificationCenterService)
+    public TrayService(IHoverActivationService hoverActivationService)
     {
-        _themeService = themeService;
-        _autoStartService = autoStartService;
         _hoverActivationService = hoverActivationService;
-        _notificationCenterService = notificationCenterService;
-        _themeService.ThemeChanged += ThemeService_ThemeChanged;
         _hoverActivationService.EnabledChanged += HoverActivationService_EnabledChanged;
     }
 
-    public void Initialize(Action togglePanel, Action checkForUpdates, Action exitApplication)
+    public void Initialize(
+        Action togglePanel,
+        Action openSettings,
+        Action exitApplication)
     {
-        _checkForUpdatesAction = checkForUpdates;
         _menu = new Forms.ContextMenuStrip();
         _menu.Items.Add("Открыть Mate", null, (_, _) => togglePanel());
+        _menu.Items.Add("Настройки", null, (_, _) => openSettings());
         _menu.Items.Add(new Forms.ToolStripSeparator());
 
-        var themeMenu = new Forms.ToolStripMenuItem("Тема");
-        foreach (var option in _themeService.AvailableThemes)
-        {
-            var item = new Forms.ToolStripMenuItem(option.DisplayName)
-            {
-                CheckOnClick = false
-            };
-            item.Click += (_, _) => _themeService.SetTheme(option.Theme);
-            _themeItems[option.Theme] = item;
-            themeMenu.DropDownItems.Add(item);
-        }
-        UpdateThemeChecks();
-        _menu.Items.Add(themeMenu);
-
-        _autoStartItem = new Forms.ToolStripMenuItem("Автозапуск")
+        _hoverActivationItem = new Forms.ToolStripMenuItem("Отключить открытие по наведению")
         {
             CheckOnClick = false,
-            Checked = _autoStartService.IsEnabled
-        };
-        _autoStartItem.Click += AutoStartItem_Click;
-        _menu.Items.Add(_autoStartItem);
-
-        _hoverActivationItem = new Forms.ToolStripMenuItem("Открывать при наведении")
-        {
-            CheckOnClick = false,
-            Checked = _hoverActivationService.IsEnabled
+            Checked = !_hoverActivationService.IsEnabled
         };
         _hoverActivationItem.Click += HoverActivationItem_Click;
         _menu.Items.Add(_hoverActivationItem);
-
-        _updateItem = new Forms.ToolStripMenuItem("Проверить обновления");
-        _updateItem.Click += UpdateItem_Click;
-        _menu.Items.Add(_updateItem);
         _menu.Items.Add(new Forms.ToolStripSeparator());
 
         _menu.Items.Add("Выход", null, (_, _) => exitApplication());
@@ -98,57 +57,26 @@ public sealed class TrayService : ITrayService
 
     public void SetUpdateCheckInProgress(bool isInProgress)
     {
-        if (_updateItem is null) return;
-
-        _updateItem.Enabled = !isInProgress;
-        if (isInProgress)
-        {
-            _updateItem.Text = "Проверка обновлений…";
-            _updateItem.ToolTipText = string.Empty;
-        }
-        else if (_installUpdateAction is null
-                 && _updateItem.Text == "Проверка обновлений…")
-        {
-            _updateItem.Text = "Проверить обновления";
-            _updateItem.ToolTipText = string.Empty;
-        }
+        // Update progress is shown inside the application.
     }
 
     public void ShowUpdateAvailable(string version, Action installUpdate)
     {
-        _installUpdateAction = installUpdate;
         SetUpdateIconState(hasUpdate: true);
-        if (_updateItem is not null)
-        {
-            _updateItem.Enabled = true;
-            _updateItem.Text = $"Доступна версия {version}";
-            _updateItem.ToolTipText = "Скачать и установить обновление";
-        }
     }
 
     public void SetUpdateInstallationInProgress()
     {
-        if (_updateItem is null) return;
-
-        _updateItem.Enabled = false;
-        _updateItem.Text = "Скачивание обновления…";
-        _updateItem.ToolTipText = string.Empty;
+        // Installation progress is shown inside the application.
     }
 
     public void ShowUpdateCheckMessage(string message)
     {
-        _installUpdateAction = null;
         SetUpdateIconState(hasUpdate: false);
-        if (_updateItem is null) return;
-
-        _updateItem.Enabled = true;
-        _updateItem.Text = message;
-        _updateItem.ToolTipText = "Нажмите, чтобы проверить снова";
     }
 
     public void Dispose()
     {
-        _themeService.ThemeChanged -= ThemeService_ThemeChanged;
         _hoverActivationService.EnabledChanged -= HoverActivationService_EnabledChanged;
         _notifyIcon?.Dispose();
         _notifyIcon = null;
@@ -158,58 +86,19 @@ public sealed class TrayService : ITrayService
         _trayIcon = null;
         _menu?.Dispose();
         _menu = null;
-        _autoStartItem = null;
         _hoverActivationItem = null;
-        _updateItem = null;
-        _checkForUpdatesAction = null;
-        _installUpdateAction = null;
-        _themeItems.Clear();
     }
-
-    private void ThemeService_ThemeChanged(object? sender, EventArgs e) => UpdateThemeChecks();
 
     private void HoverActivationService_EnabledChanged(object? sender, EventArgs e)
     {
         if (_hoverActivationItem is not null)
         {
-            _hoverActivationItem.Checked = _hoverActivationService.IsEnabled;
+            _hoverActivationItem.Checked = !_hoverActivationService.IsEnabled;
         }
-    }
-
-    private void UpdateItem_Click(object? sender, EventArgs e)
-    {
-        var action = _installUpdateAction ?? _checkForUpdatesAction;
-        action?.Invoke();
-    }
-
-    private void AutoStartItem_Click(object? sender, EventArgs e)
-    {
-        if (_autoStartItem is null) return;
-
-        var shouldEnable = !_autoStartService.IsEnabled;
-        if (_autoStartService.SetEnabled(shouldEnable))
-        {
-            _autoStartItem.Checked = shouldEnable;
-            return;
-        }
-
-        _autoStartItem.Checked = _autoStartService.IsEnabled;
-        _notificationCenterService.Publish(
-            "Автозапуск",
-            "Не удалось изменить настройку автозапуска.",
-            MateNotificationKind.Error);
     }
 
     private void HoverActivationItem_Click(object? sender, EventArgs e) =>
         _hoverActivationService.SetEnabled(!_hoverActivationService.IsEnabled);
-
-    private void UpdateThemeChecks()
-    {
-        foreach (var pair in _themeItems)
-        {
-            pair.Value.Checked = pair.Key == _themeService.CurrentTheme;
-        }
-    }
 
     private void SetUpdateIconState(bool hasUpdate)
     {
